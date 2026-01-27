@@ -1,0 +1,81 @@
+.sidebar {
+    width: 260px;
+    height: 100vh;
+    background-color: #121212; /* Um pouco mais escuro que o fundo principal */
+    border-right: 1px solid #222;
+    display: flex;
+    flex-direction: column;
+    padding: 30px 20px;
+    position: fixed;
+    left: 0;
+    top: 0;
+}
+
+.logoArea {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 50px;
+    padding-left: 10px;
+}
+
+.logoIcon {
+    color: #81FE88;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.logoText {
+    color: #fff;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.nav {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+}
+
+.navItem, .navItemActive {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 15px;
+    text-decoration: none;
+    color: #888;
+    border-radius: 8px;
+    transition: 0.3s;
+    font-size: 15px;
+}
+
+.navItem:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.navItemActive {
+    background: rgba(129, 254, 136, 0.1);
+    color: #81FE88;
+}
+
+.footerNav {
+    border-top: 1px solid #222;
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.logoutBtn {
+    background: none;
+    border: none;
+    color: #ff5555;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 15px;
+    cursor: pointer;
+    font-size: 15px;
+}

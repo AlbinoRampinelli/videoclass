@@ -1,0 +1,14 @@
+
+.form .action {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+}
+.action {
+    display: flex !important;
+    justify-content: center !important;
+    margin-top: 40px !important;    /* Espaço generoso acima */
+    margin-bottom: 40px !important; /* Espaço generoso abaixo */
+    padding: 10px 0 !important;     /* Garante que a div tenha altura */
+    width: 100%;
+}

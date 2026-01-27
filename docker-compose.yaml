@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: videoclass_db_container
+    ports:
+      - 5434:5432
+    volumes:
+      - ./pgdata_video:/var/lib/postgresql/data
+
+    environment:
+      POSTGRES_DB: videoclass_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ei1joy2 # Adicione uma senha por segurança
+      POSTGRES_HOST_AUTH_METHOD: md5 # Mais seguro que 'trust'
+
+volumes:
+  pgdata_video: 

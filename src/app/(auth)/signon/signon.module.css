@@ -1,0 +1,215 @@
+.main {
+  display: flex;
+  width: 100%;
+  min-height: calc(100vh - 80px); /* Garante que respeite a altura da Navbar */
+  align-items: center;
+  justify-content: center;
+  background-color: #2e2e2e; /* Cinza escuro para dar contraste com o preto */
+  padding: 40px 20px;
+}
+/* 1. O Wrapper precisa garantir que os dois lados tenham a mesma altura */
+.wrapper {
+    display: flex;
+    align-items: stretch; /* ISSO faz a imagem crescer junto com o formulário */
+    background-color: #1a1a1a;
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 850px; /* Altura mínima para acomodar todos os campos */
+    width: 100%;
+    max-width: 1100px;
+    margin: 40px auto;
+}
+
+/* 2. Lado da Imagem (Ajuste para cobrir tudo) */
+.bannerContainer {
+    position: relative;
+    flex: 1.2;
+    display: flex; /* Garante que o container ocupe a altura toda */
+}
+.bannerImage {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important; 
+}
+/* Garante que o container de texto não corte nada */
+/* O contêiner do formulário (Lado direito) */
+.container {
+    flex: 1;                /* Deixa ele crescer... */
+    min-width: 450px;       /* ...mas NUNCA deixa ficar menor que 450px */
+    padding: 40px;
+    background-color: #1a1a1a;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 2;             /* Garante que fique acima de qualquer fundo */
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Aumenta o respiro entre os campos */
+}
+
+/* Ajuste crítico para os Inputs e CPF */
+.form > div {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* 🎯 Reduzi de 20px para 12px para o formulário ficar mais "curto" */
+}
+.form input {
+  padding: 8px 12px; /* Campos um pouco menos "altos" */
+}
+
+/* Força o CPF a se comportar como os outros */
+.form input[name="cpf"] {
+  display: block;
+}
+
+.footer {
+  margin-top: 30px;
+  text-align: center;
+  padding-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  .wrapper {
+    flex-direction: column;
+  }
+  .bannerContainer {
+    height: 300px;
+  }
+}
+.checkboxContainer {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  align-self: flex-start !important; /* Mantém na esquerda */
+  
+  width: fit-content !important; 
+  margin: 20px 0 !important;
+  padding: 0 !important;
+  gap: 0 !important; /* Zera o espaço entre os dois */
+}
+.checkboxContainer input[type="checkbox"] {
+  all: unset !important; /* Reseta estilos de bibliotecas externas */
+  display: block !important;
+  width: 18px !important;
+  height: 18px !important;
+  appearance: checkbox !important; /* Volta a ser um checkbox */
+  margin: 0 !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+}
+.checkboxInput {
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+  flex-shrink: 0; /* Impede o box de ser "esmagado" pelo texto */
+}
+.checkboxContainer label {
+  /* ... seus outros estilos ... */
+  margin-left: 8px !important; /* Cria um espaço pequeno e elegante entre o box e o texto */
+}
+.checkboxLabel {
+  color: #ffffff !important;
+  font-size: 14px !important;
+  margin: 0 !important;
+  cursor: pointer;
+  white-space: nowrap; /* IMPEDE O TEXTO DE SAIR DA TELA/QUEBRAR */
+}
+
+/* 3. Botão Cadastrar: Ocupando a largura total com destaque */
+.action {
+  width: 100%; /* Ocupa toda a largura do lado direito */
+  margin-top: 10px;
+}
+/* Deixa o botão 'Cadastrar' grande e destacado */
+/* 4. Ajuste no Botão (acompanhando a nova proporção) */
+.action button {
+  width: 100% !important;
+  background-color: #81FE88 !important;
+  color: #000 !important;
+  padding: 12px !important; /* Era 16px */
+  font-weight: bold !important;
+  font-size: 14px; /* Proporcional ao novo tamanho */
+  border-radius: 6px !important;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+.action button:hover {
+  transform: scale(1.02);
+  filter: brightness(1.1);
+}
+/* Ajuste para as outras divs do form não quebrarem o checkbox */
+.logoOverlay {
+    position: absolute;
+    top: 40px;
+    left: 40px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: white;
+}
+
+.logoText {
+    font-size: 24px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.logoSub {
+    font-size: 10px;
+    opacity: 0.8;
+}
+
+.bottomText {
+    position: absolute;
+    bottom: 80px;
+    left: 40px;
+    color: white;
+}
+
+.highlightText {
+    font-size: 32px;
+    font-weight: 700;
+    color: #81FE88; /* Verde Neon igual ao botão */
+    margin-bottom: 5px;
+}
+
+.subHighlightText {
+    font-size: 18px;
+    opacity: 0.9;
+}
+/* 3. Ajuste do Rodapé (Para limpar aquela seta perdida e o texto encavalado) */
+.footer {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #333;
+    text-align: center;
+    width: 100%;
+}
+
+.footer p {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #ccc;
+    font-size: 14px;
+}
+
+.footer a {
+    color: #81FE88;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: bold;
+}

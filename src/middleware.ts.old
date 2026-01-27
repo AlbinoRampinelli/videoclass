@@ -1,0 +1,16 @@
+import { auth } from "@/auth"
+
+export default auth((req) => {
+  const isLoggedIn = !!req.auth
+  const isPrivatePage = req.nextUrl.pathname.startsWith("/aulas")
+
+  // Se o usuário tentar acessar /aulas sem estar logado, manda para o login
+  if (isPrivatePage && !isLoggedIn) {
+    return Response.redirect(new URL("/signin", req.nextUrl))
+  }
+})
+
+export const config = {
+  // Define quais caminhos o middleware deve vigiar
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+}

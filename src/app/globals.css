@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+/* O Tailwind cuidará das cores agora através das classes no layout */
+body {
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+}
