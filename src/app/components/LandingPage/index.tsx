@@ -1,27 +1,32 @@
 // src/app/page.tsx
+"use client"
 import Link from "next/link";
 import { Clock, CheckCircle2 } from "lucide-react";
+import ModalLogin from '../../components/ModalLogin'
+import { useState } from "react";
 
 export default function LandingPage() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const courses = [
-    { 
-      id: '1', 
-      title: 'Python na Prática', 
-      price: 297, 
+    {
+      id: '1',
+      title: 'Python na Prática',
+      price: 297,
       duration: '40h',
       features: ['Certificado incluso', 'Suporte especializado', 'Acesso vitalício']
     },
-    { 
-      id: '2', 
-      title: 'STEAM', 
-      price: 197, 
+    {
+      id: '2',
+      title: 'STEAM',
+      price: 197,
       duration: '20h',
       features: ['Certificado incluso', 'Suporte especializado', 'Acesso vitalício']
     },
-    { 
-      id: '3', 
-      title: 'Robótica Educacional', 
-      price: 397, 
+    {
+      id: '3',
+      title: 'Robótica Educacional',
+      price: 397,
       duration: '60h',
       features: ['Certificado incluso', 'Suporte especializado', 'Acesso vitalício']
     },
@@ -31,8 +36,8 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[#09090b] text-white">
       {/* Header Centralizado */}
       <nav className="p-6 border-b border-zinc-800 flex justify-between items-center max-w-7xl mx-auto w-full">
-        <div className="text-[#81FE88] font-bold text-2xl tracking-tighter">\\ VIDEOCLASS</div>
-        {/* <Link href="/api/auth/signin?callbackUrl=/vitrine" className="bg-[#81FE88] text-black px-6 py-2 rounded-full font-bold text-sm">
+        {/*<div className="text-[#81FE88] font-bold text-2xl tracking-tighter">\\ VIDEOCLASS</div>}
+        <Link href="/api/auth/signin?callbackUrl=/vitrine" className="bg-[#81FE88] text-black px-6 py-2 rounded-full font-bold text-sm">
           Entrar
         </Link> */}
       </nav>
@@ -66,12 +71,18 @@ export default function LandingPage() {
                 ))}
               </ul>
 
-              <Link 
-                href={`/checkout/${course.id}`} 
+              <button
+                onClick={() => setIsModalOpen(true)} // Abre o modal ao clicar
                 className="w-full py-4 bg-white text-black rounded-2xl font-black text-sm text-center hover:bg-[#81FE88] transition-colors uppercase"
               >
                 Quero me matricular
-              </Link>
+              </button>
+
+              {/* O componente fica "escondido" aqui, esperando o estado ser true */}
+              <ModalLogin
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+              />
             </div>
           ))}
         </div>
