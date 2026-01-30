@@ -14,10 +14,11 @@ import { createUser } from '../../actions'
 import { useActionState, useState } from 'react'
 
 export default function SignOn() {
+    // A action 'createUser' agora não deve mais exigir senha no servidor
     const [state, formAction] = useActionState(createUser, { message: null });
     const [cpf, setCpf] = useState('');
+    const [phone, setPhone] = useState('');
 
-    // Função de máscara simples (Puro JavaScript)
     const formatarCPF = (value) => {
         if (!value) return "";
         return value
@@ -28,25 +29,25 @@ export default function SignOn() {
             .replace(/(-\d{2})\d+?$/, '$1');
     };
 
-    const handleCPFChange = (e) => {
-        const valorFormatado = formatarCPF(e.target.value);
-        setCpf(valorFormatado);
+    const formatarPhone = (value) => {
+        if (!value) return "";
+        return value
+            .replace(/\D/g, '')
+            .replace(/^(\d{2})(\d)/g, '($1) $2')
+            .replace(/(\d{5})(\d)/, '$1-$2')
+            .slice(0, 15);
     };
+
+    const handleCPFChange = (e) => setCpf(formatarCPF(e.target.value));
+    const handlePhoneChange = (e) => setPhone(formatarPhone(e.target.value));
 
     return (
         <main className={styles.main}>
             <div className={styles.wrapper}>
-                
-                {/* LADO DA IMAGEM COM TEXTOS */}
+
+                {/* LADO DA IMAGEM */}
                 <div className={styles.bannerContainer}>
-                    <Image
-                        src={banner}
-                        alt='Banner'
-                        priority
-                        className={styles.bannerImage}
-                    />
-                    
-                    {/* Estes textos vão aparecer se você usar o CSS que te passei antes */}
+                    <Image src={banner} alt='Banner' priority className={styles.bannerImage} />
                     <div className={styles.logoOverlay}>
                         <div className={styles.logoIcon}>\\</div>
                         <div>
@@ -54,7 +55,6 @@ export default function SignOn() {
                             <p className={styles.logoSub}>Seu futuro digital começa aqui</p>
                         </div>
                     </div>
-
                     <div className={styles.bottomText}>
                         <h2 className={styles.highlightText}>Desbloqueie Seu Potencial</h2>
                         <p className={styles.subHighlightText}>Aprenda. Conecte-se. Cresça.</p>
@@ -66,16 +66,12 @@ export default function SignOn() {
                     <h1>Cadastro</h1>
                     <h2>Olá! Preencha seus dados.</h2>
 
-                    {state?.message && (
-                        <p className={styles.errorMessage}>{state.message}</p>
-                    )}
-
                     <form className={styles.form} action={formAction}>
                         <div className={styles.inputGroup}>
                             <Label>Nome</Label>
                             <Input name="name" id="name" placeholder="Nome completo" required />
                         </div>
-                        
+
                         <div className={styles.inputGroup}>
                             <Label>Email</Label>
                             <Input name="email" id="email" type="email" placeholder="Digite seu E-mail" required />
@@ -86,31 +82,22 @@ export default function SignOn() {
                             <Input
                                 name="cpf"
                                 id="cpf"
-                                value={cpf}
+                                value={cpf || ''}
                                 onChange={handleCPFChange}
                                 placeholder="000.000.000-00"
-                                required 
+                                required
                             />
                         </div>
-
-                        {/* Labels Corrigidos */}
+                        
                         <div className={styles.inputGroup}>
-                            <Label>Senha</Label>
+                            <Label>Celular</Label>
                             <Input
-                                type="password"
-                                name="password"
+                                name="phone"
+                                id="phone"
+                                value={phone || ''}
+                                onChange={handlePhoneChange}
+                                placeholder="(00) 00000-0000"
                                 required
-                                placeholder="Crie uma senha"
-                            />
-                        </div>
-
-                        <div className={styles.inputGroup}>
-                            <Label>Confirmar Senha</Label>
-                            <Input
-                                type="password"
-                                name="confirmPassword"
-                                required
-                                placeholder="Repita a senha"
                             />
                         </div>
 
@@ -134,6 +121,10 @@ export default function SignOn() {
                     </div>
 
                     <footer className={styles.footer}>
+                        {/* Mensagem de erro movida para cá para ficar perto da seta de login */}
+                        {state?.message && (
+                            <p className={styles.errorMessageBottom}>{state.message}</p>
+                        )}
                         <p>
                             Já tem conta? <Link href='/signin'>Faça seu login! <Login color="#81FE88" /></Link>
                         </p>

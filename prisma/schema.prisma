@@ -5,27 +5,23 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") 
-}
-model User {
-  id                String       @id @default(cuid())
-  name              String?
-  email             String       @unique
-  cpf               String?      @unique
-  emailVerified     DateTime?
-  role              String  @default("USER")
-  codigoVerificacao String?
-  passwordHash      String?
-  image             String?
-  enrollments       Enrollment[]
-  accessActive      Boolean      @default(false)
-  accessUntil       DateTime?
-  accounts          Account[]
-  sessions          Session[]
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  url      = env("DATABASE_URL")
 }
 
+model User {
+  id               String    @id @default(cuid())
+  name             String?
+  email            String?   @unique // Opcional se você quiser permitir troca
+  cpf              String?   @unique // Chave Mestre Real
+  phone            String?
+  codigoVerificacao String?
+  passwordHash      String? // PRECISA ter a interrogação ?
+  accounts          Account[]
+  sessions          Session[]
+  enrollments       Enrollment[]
+}
+
+// OBRIGATÓRIO para o PrismaAdapter funcionar com Google:
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -54,13 +50,12 @@ model Session {
 }
 
 model Course {
-  id          String  @id @default(cuid())
-  slug        String  @unique // ex: "python-master", "robotica"
+  id          String       @id @default(cuid())
+  slug        String       @unique
   title       String
   description String?
   price       Float
   imageUrl    String?
-
   enrollments Enrollment[]
 }
 
@@ -68,9 +63,7 @@ model Enrollment {
   id        String   @id @default(cuid())
   userId    String
   courseId  String
-  user      User     @relation(fields: [userId], references: [id])
-  course    Course   @relation(fields: [courseId], references: [id])
   createdAt DateTime @default(now())
-
-  @@unique([userId, courseId]) // Garante que não compre o mesmo curso duas vezes
+  course    Course   @relation(fields: [courseId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }

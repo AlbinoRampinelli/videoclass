@@ -1,10 +1,13 @@
 import { PrismaClient } from '@prisma/client'
 
-const globalForPrisma = global;
+const prismaClientSingleton = () => {
+  return new PrismaClient()
+}
 
-// Evita criar múltiplas instâncias do Prisma em desenvolvimento
-export const db = globalForPrisma.prisma || new PrismaClient()
+// Em JS puro, usamos apenas a atribuição global
+const db = global.prisma || prismaClientSingleton()
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+if (process.env.NODE_ENV !== 'production') global.prisma = db
 
-export default db;
+export { db }
+export default db

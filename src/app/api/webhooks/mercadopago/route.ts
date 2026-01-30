@@ -11,15 +11,14 @@ export async function POST(request: Request) {
         const body = await request.json();
         // O MP às vezes envia o ID na URL (query) ou no body
         const { searchParams } = new URL(request.url);
-        const paymentId = body.data?.id || body.id || searchParams.get("data.id");
+        const paymentId = body.data?.id || body.id || searchParams.get("data.id") || searchParams.get("id");
 
         console.log("-----------------------------------------");
-        console.log("🔔 WEBHOOK RECEBIDO");
-        console.log("🆔 ID do Pagamento:", paymentId);
+        console.log("🔔 WEBHOOK RECEBIDO - ID:", paymentId);
 
-        if (!paymentId || paymentId === "123456") {
-            console.log("⏭️ Ignorando teste genérico.");
-            return NextResponse.json({ ok: true }, { status: 200 });
+        if (!paymentId || paymentId === "123456" || paymentId === "1234567890") {
+            console.log("⏭️ Ignorando ID de teste ou manual.");
+            return NextResponse.json({ ok: true });
         }
 
         const payment = new Payment(client);

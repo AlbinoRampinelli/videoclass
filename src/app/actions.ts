@@ -1,55 +1,64 @@
 "use server"
 
-import { auth } from "@/auth";
-import db from "../../prisma/db"; 
-import { revalidatePath } from "next/cache";
-import bcrypt from "bcrypt";
+import { db } from "../../prisma/db";
+import { redirect } from "next/navigation";
+import { signOut } from "@/auth";
 
-// FUNÇÃO DO MODAL (SALVAR CPF)
-export async function saveCpf(formData: FormData) {
-  const session = await auth();
-  const rawCpf = formData.get("cpf")?.toString();
-  const cpf = rawCpf ? rawCpf.replace(/\D/g, '') : null;
+/**
+ * ACTION: Cadastro de Usuário (Sem Senha)
+ */
+export async function createUser(prevState: any, formData: FormData) {
+    try {
+        const name = formData.get("name") as string;
+        const email = formData.get("email") as string;
+        
+        // Limpamos CPF e Phone para salvar apenas números
+        const cpf = (formData.get("cpf") as string)?.replace(/\D/g, "");
+        const phone = (formData.get("phone") as string)?.replace(/\D/g, "");
 
-  if (!session?.user?.email) return { error: "Usuário não autenticado" };
-  if (!cpf || cpf.length !== 11) return { error: "CPF inválido" };
+        // 1. Validações básicas (Removido senha daqui)
+        if (!name || !email || !cpf || !phone) {
+            return { message: "Preencha todos os campos obrigatórios." };
+        }
 
-  try {
-    await db.user.update({
-      where: { email: session.user.email },
-      data: { cpf: cpf },
-    });
+        if (cpf.length !== 11) {
+            return { message: "CPF inválido. Digite os 11 números." };
+        }
 
-    revalidatePath("/"); 
-    return { success: true };
-  } catch (error) {
-    console.error("Erro no Prisma:", error);
-    return { error: "Falha ao gravar no banco" };
-  }
+        // 2. Verificar se o CPF já existe
+        const existingUser = await db.user.findUnique({
+            where: { cpf: cpf }
+        });
+
+        if (existingUser) {
+            return { message: "Este CPF já está cadastrado. Vá para a tela de login." };
+        }
+
+        // 3. Criar o usuário no Banco (Sem o campo password)
+        await db.user.create({
+            data: {
+                name,
+                email,
+                cpf,
+                phone,
+            },
+        });
+
+        console.log("✅ Usuário criado com sucesso:", email);
+
+    } catch (error: any) {
+        if (error.message === 'NEXT_REDIRECT') throw error; // Necessário para o redirect funcionar
+        console.error("ERRO AO CRIAR USUÁRIO:", error);
+        return { message: "Erro interno ao criar conta." };
+    }
+
+    // Redireciona para o login para ele receber o código OTP
+    redirect("/signin");
 }
 
-// FUNÇÃO DE CADASTRO MANUAL (RESOLVENDO O ERRO DO PASSWORD)
-export async function createUser(formData: FormData) {
-  const email = formData.get("email")?.toString();
-  const rawPassword = formData.get("password")?.toString();
-
-  // A validação de senha agora está DENTRO da função correta
-  if (!rawPassword || rawPassword.trim() === "") {
-    return { error: "Senha é obrigatória" };
-  }
-
-  const password: string = rawPassword; 
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  try {
-    await db.user.create({
-      data: {
-        email: email as string,
-        passwordHash: hashedPassword, // Usando o nome exato do seu schema.prisma
-      }
-    });
-    return { success: true };
-  } catch (error) {
-    return { error: "Erro ao criar conta" };
-  }
+/**
+ * ACTION: Logout (Resolve o erro do componente Aside)
+ */
+export async function handleLogout() {
+    await signOut({ redirectTo: "/signin" });
 }

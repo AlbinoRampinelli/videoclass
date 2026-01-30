@@ -1,9 +1,19 @@
-// src/components/VitrineCursos.tsx
+"use client"; // <--- ESSENCIAL
+
+import { useEffect, useState } from "react";
 import CpfModal from "../CpfModal";
 import { CourseCard } from "../CourseCard";
 import { VideoPlayer } from "../VideoPlayer";
 
 export default function VitrineCursos({ userDb, session }: any) {
+  const [comprasLocais, setComprasLocais] = useState<string[]>([]);
+
+  // Só roda no navegador
+  useEffect(() => {
+    const cache = JSON.parse(localStorage.getItem("meus_cursos") || "[]");
+    setComprasLocais(cache);
+  }, []);
+
   const courses = [
     { id: '1', title: 'Python na Prática', price: 297 },
     { id: '2', title: 'STEAM', price: 197 },
@@ -14,10 +24,7 @@ export default function VitrineCursos({ userDb, session }: any) {
   const mostrarModal = !userDb?.cpf;
 
   return (
-    /* Removi o <Aside /> e a div flex daqui. 
-       O layout.tsx já cuida da barra lateral e do fundo. */
     <div className="p-10">
-      {/* Modal de CPF aparece por cima se o usuário não tiver CPF no banco */}
       {mostrarModal && <CpfModal userName={firstName} />}
 
       <header className="mb-10">
@@ -26,7 +33,6 @@ export default function VitrineCursos({ userDb, session }: any) {
         </h1>
       </header>
 
-      {/* Player de vídeo em destaque */}
       <div className="rounded-3xl overflow-hidden border border-zinc-800">
         <VideoPlayer 
           src="https://nlzzion4sqcvrbfv.public.blob.vercel-storage.com/PYTON%20-%204K.mov" 
@@ -40,14 +46,20 @@ export default function VitrineCursos({ userDb, session }: any) {
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map(course => (
-            <CourseCard 
-              key={course.id} 
-              course={course} 
-              // Verifica se a matrícula existe no banco de dados (Prisma)
-              jaComprou={userDb?.enrollments?.some((e: any) => e.courseId === course.id)} 
-            />
-          ))}
+          {courses.map((course) => {
+            // Se estiver no banco OU no localStorage (para parceiros testarem)
+            const jaComprou = 
+              userDb?.enrollments?.some((e: any) => e.courseId === course.id) || 
+              comprasLocais.includes(course.id);
+
+            return (
+              <CourseCard 
+                key={course.id} 
+                course={course} 
+                jaComprou={jaComprou} 
+              />
+            );
+          })}
         </div>
       </section>
     </div>

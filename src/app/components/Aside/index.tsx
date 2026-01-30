@@ -1,11 +1,8 @@
-// src/components/Aside.tsx
 import Link from "next/link";
-import { auth, signOut } from "@/auth"; 
-
+import { auth } from "@/auth"; 
+import { handleLogout } from "../../../app/actions"; // Sua action externa
 
 export default async function Aside() {
-  
-  // Ele busca a sessão aqui. Se estiver na Landing ou na Vitrine, o resultado será o mesmo.
   const session = await auth(); 
 
   return (
@@ -19,7 +16,6 @@ export default async function Aside() {
           Home
         </Link>
         
-        {/* Só aparece se o usuário estiver logado no Google */}
         {session && (
           <Link href="/vitrine" className="text-zinc-400 hover:text-[#81FE88] transition-colors font-bold uppercase text-[10px] tracking-widest">
             Meus Cursos
@@ -39,11 +35,12 @@ export default async function Aside() {
                </span>
             </div>
             
-            <form action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/" });
-            }}>
-              <button className="w-full bg-red-500/10 text-red-500 border border-red-500/20 py-2 rounded-xl hover:bg-red-500 hover:text-white transition-all text-[10px] font-black uppercase">
+            {/* AGORA SIM: Chamando a action externa corretamente */}
+            <form action={handleLogout}>
+              <button 
+                type="submit"
+                className="w-full bg-red-500/10 text-red-500 border border-red-500/20 py-2 rounded-xl hover:bg-red-500 hover:text-white transition-all text-[10px] font-black uppercase"
+              >
                 Logout
               </button>
             </form>

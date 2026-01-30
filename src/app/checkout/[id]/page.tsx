@@ -1,114 +1,134 @@
-'use client'
+"use client";
+import { useState, use, useEffect } from "react";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Copy, Check, Loader2, Google } from "lucide-react"; // Se não tiver o ícone Google, pode remover
-import Link from "next/link";
-import { useSession } from "next-auth/react"; // Precisamos do hook para ver se está logado
+export default function CheckoutPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: courseId } = use(params);
+  const [loading, setLoading] = useState(false);
+  const [dadosPix, setDadosPix] = useState<any>(null);
+  const [metodo, setMetodo] = useState<"pix" | "card">("pix");
+  const [statusPagamento, setStatusPagamento] = useState<"pendente" | "aprovado">("pendente");
 
-export default function CheckoutPage() {
-  const { id } = useParams();
-  const router = useRouter();
-  const { data: session, status } = useSession(); // 'loading', 'authenticated' ou 'unauthenticated'
+  // Simulação para seus parceiros: Se eles clicarem no QR Code, o sistema "aprova"
+  // Na vida real, isso será substituído por um useEffect que checa a API
+  const simularAprovacao = () => {
+  // Pega o que já tem, adiciona o novo curso e salva
+  const compras = JSON.parse(localStorage.getItem("meus_cursos") || "[]");
+  if (!compras.includes(courseId)) {
+    compras.push(courseId);
+    localStorage.setItem("meus_cursos", JSON.stringify(compras));
+  }
   
-  const [loadingPix, setLoadingPix] = useState(false);
-  const [pixData, setPixData] = useState<any>(null);
-  const [copied, setCopied] = useState(false);
+  // Manda para a vitrine para o parceiro ver o botão mudado
+  window.location.href = "/vitrine"; 
+};
 
-  // 1. Função que gera o PIX (SÓ RODA SE ESTIVER LOGADO)
-  const gerarPix = async () => {
-    if (status !== "authenticated") return;
-    
-    setLoadingPix(true);
+  const gerarPagamento = async () => {
+    setLoading(true);
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId: id, paymentMethod: 'pix' }),
+        body: JSON.stringify({ courseId })
       });
-      
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setPixData(data);
+      
+      if (data?.point_of_interaction?.transaction_data) {
+        setDadosPix(data.point_of_interaction.transaction_data);
+        setStatusPagamento("pendente");
+      }
     } catch (err) {
-      alert("Erro ao gerar Pix. Verifique seu cadastro.");
+      console.error(err);
     } finally {
-      setLoadingPix(false);
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (status === "authenticated") {
-      gerarPix();
-    }
-  }, [status, id]);
-
-  const copiarPix = () => {
-    navigator.clipboard.writeText(pixData.point_of_interaction.transaction_data.qr_code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  // TELA A: Carregando Sessão
-  if (status === "loading") {
-    return <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-white italic">Verificando...</div>;
-  }
-
-  // TELA B: VISITANTE NÃO LOGADO (A EXPLICAÇÃO QUE FALTAVA)
-  if (status === "unauthenticated") {
-    return (
-      <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-zinc-900 border border-zinc-800 p-10 rounded-[40px] text-center shadow-2xl">
-          <h2 className="text-[#81FE88] font-black text-2xl mb-4 italic uppercase italic">Quase lá!</h2>
-          <p className="text-zinc-400 mb-8 text-sm leading-relaxed">
-            Para realizar sua matrícula e liberar seu acesso, precisamos que você ou cadastre-se ou acesse logado.
-          </p>
-          <Link 
-            href={`/api/auth/signin?callbackUrl=/checkout/${id}`}
-            className="w-full py-5 bg-white text-black rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-[#81FE88] transition-all uppercase text-xs"
-          >
-            Basta pressionar aqui !!
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // TELA C: USUÁRIO LOGADO - MOSTRA O QR CODE
   return (
-    <div className="min-h-screen bg-[#09090b] text-white p-6 flex flex-col items-center justify-center">
-      {loadingPix ? (
-        <div className="flex flex-col items-center gap-4">
-            <Loader2 className="animate-spin text-[#81FE88]" size={40} />
-            <p className="font-bold italic">GERANDO SEU PIX...</p>
+    <div className="p-8 max-w-md mx-auto min-h-screen bg-white text-black font-sans">
+      <div className="text-center mb-10">
+        <h1 className="text-4xl font-black italic uppercase tracking-tighter leading-none mb-2">Checkout</h1>
+        <div className="h-1.5 w-12 bg-yellow-400 mx-auto rounded-full"></div>
+      </div>
+
+      {statusPagamento === "aprovado" ? (
+        /* --- TELA DE SUCESSO (O QUE VOCÊ QUERIA) --- */
+        <div className="text-center animate-in zoom-in-95 duration-500 py-10">
+          <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-10 h-10">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-black uppercase mb-2">Pagamento Confirmado!</h2>
+          <p className="text-zinc-500 text-sm font-bold mb-10 uppercase tracking-widest">O curso já está disponível na sua área de membros.</p>
+          
+          <button
+            onClick={() => window.location.href = "/dashboard"} // Ajuste para sua rota de membros
+            className="w-full p-6 bg-black text-white font-black rounded-[2rem] hover:scale-105 transition-all uppercase italic shadow-2xl"
+          >
+            ACESSAR CURSO AGORA
+          </button>
         </div>
       ) : (
-        <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-[32px] p-8 text-center shadow-2xl">
-          <h1 className="text-xl font-black mb-8 uppercase italic">Pagamento Via Pix</h1>
-          
-          {pixData && (
-            <div className="flex flex-col items-center gap-6">
-              <div className="bg-white p-4 rounded-2xl">
-                <img 
-                  src={`data:image/jpeg;base64,${pixData.point_of_interaction.transaction_data.qr_code_base64}`} 
-                  alt="QR Code Pix"
-                  className="w-56 h-56"
-                />
-              </div>
-              
-              <div className="w-full">
-                <button 
-                  onClick={copiarPix}
-                  className="w-full p-4 bg-zinc-800 border border-zinc-700 rounded-xl flex items-center justify-between hover:border-[#81FE88] transition-all"
-                >
-                  <span className="text-[10px] text-zinc-400 truncate pr-4">{pixData.point_of_interaction.transaction_data.qr_code}</span>
-                  {copied ? <Check size={18} className="text-[#81FE88]" /> : <Copy size={18} />}
-                </button>
-              </div>
+        /* --- FLUXO DE PAGAMENTO --- */
+        <>
+          {!dadosPix && (
+            <div className="flex bg-zinc-100 p-1.5 rounded-[1.5rem] mb-10 border border-zinc-200">
+              <button onClick={() => setMetodo("pix")} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase transition-all ${metodo === "pix" ? "bg-white shadow-md text-black" : "text-zinc-400"}`}>Pix</button>
+              <button onClick={() => setMetodo("card")} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase transition-all ${metodo === "card" ? "bg-white shadow-md text-black" : "text-zinc-400"}`}>Cartão</button>
             </div>
           )}
-        </div>
+
+          <div className="min-h-[350px]">
+            {!dadosPix ? (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {metodo === "pix" ? (
+                  <div className="text-center">
+                    <p className="text-[11px] font-black uppercase text-zinc-400 tracking-[0.2em] mb-8">Aprovação Instantânea</p>
+                    <button
+                      onClick={gerarPagamento}
+                      disabled={loading}
+                      className="w-full p-6 bg-yellow-400 text-black font-black rounded-[2rem] hover:bg-yellow-300 active:scale-95 disabled:opacity-50 shadow-xl uppercase italic"
+                    >
+                      {loading ? "PROCESSANDO..." : "GERAR PIX AGORA"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center opacity-40">
+                    <div className="bg-zinc-50 border-2 border-dashed border-zinc-200 rounded-[2.5rem] p-16 mb-4">Módulo Cartão</div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center animate-in zoom-in-95 duration-500">
+                 <div className="bg-white p-6 rounded-[3rem] shadow-sm inline-block mb-8 border border-zinc-100 cursor-pointer" onClick={simularAprovacao} title="Clique aqui para simular a aprovação">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(dadosPix.qr_code)}`}
+                      alt="QR Code"
+                      className="w-44 h-44"
+                    />
+                 </div>
+                 
+                 <div className="space-y-4">
+                   <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(dadosPix.qr_code);
+                        alert("Código Copiado!");
+                      }}
+                      className="w-full bg-black text-white py-6 rounded-[2rem] text-[12px] font-black uppercase tracking-widest shadow-xl"
+                    >
+                      Copiar Código Pix
+                    </button>
+                    <button onClick={() => setDadosPix(null)} className="text-[10px] font-bold text-zinc-300 uppercase underline block mx-auto">Voltar</button>
+                 </div>
+              </div>
+            )}
+          </div>
+        </>
       )}
+
+      <div className="mt-12 text-center text-[9px] font-bold text-zinc-300 uppercase tracking-[0.3em]">
+        Pagamento Seguro Mercado Pago
+      </div>
     </div>
   );
 }

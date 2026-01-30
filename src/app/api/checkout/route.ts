@@ -1,68 +1,34 @@
-import { MercadoPagoConfig, Payment } from 'mercadopago';
-import db from "../../../../prisma/db"; // <<-- CERTIFIQUE-SE QUE ESTE CAMINHO EXISTE
-import { auth } from "@/auth"; 
-import { NextRequest, NextResponse } from "next/server"; // Importação única e correta
-
-const client = new MercadoPagoConfig({ 
-    accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || "" 
-});
+import { NextResponse } from "next/server";
+import db from "../../../../prisma/db"; // Ajuste o caminho se necessário
 
 export async function POST(request: Request) {
-    try {
-        const session = await auth();
-        
-        // Verificação de segurança
-        if (!session?.user?.email) {
-            return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-        }
+  try {
+    const { courseId } = await request.json();
 
-        const body = await request.json();
-        const { courseId, paymentMethod, cardToken, installments } = body;
+    // 1. Buscar o valor do curso (Exemplo via Prisma)
+    const curso = await db.course.findUnique({
+      where: { id: courseId }
+    });
 
-        // 1. Busca o usuário para pegar o CPF do modal
-        const user = await db.user.findUnique({
-            where: { email: session.user.email }
-        });
-
-        // 2. Busca o curso para o preço
-        const course = await db.course.findUnique({
-            where: { id: courseId }
-        });
-
-        if (!user || !course) {
-            return NextResponse.json({ error: "Dados não encontrados" }, { status: 404 });
-        }
-
-        const payment = new Payment(client);
-
-        const paymentData: any = {
-            body: {
-                transaction_amount: Number(course.price), // Garante que é número
-                description: `Curso: ${course.title}`,
-                payment_method_id: paymentMethod, 
-                external_reference: user.id, 
-                metadata: { course_id: course.id },
-                payer: {
-                    email: user.email,
-                    identification: {
-                        type: 'CPF',
-                        number: user.cpf?.replace(/\D/g, '') || ''
-                    },
-                },
-            },
-        };
-
-        if (paymentMethod !== 'pix') {
-            paymentData.body.token = cardToken;
-            paymentData.body.installments = installments || 1;
-        }
-
-        const response = await payment.create(paymentData);
-
-        return NextResponse.json(response);
-
-    } catch (error: any) {
-        console.error("Erro no checkout:", error);
-        return NextResponse.json({ error: error.message || "Erro interno" }, { status: 500 });
+    if (!curso) {
+      return NextResponse.json({ error: "Curso não encontrado" }, { status: 404 });
     }
+
+    const valor = curso.price; // Supondo que o campo seja 'price'
+
+    // 2. Simular a resposta do Mercado Pago com o valor real
+    return NextResponse.json({
+      id: Math.floor(Math.random() * 1000000000), // Gera um ID aleatório para o teste
+      status: "pending",
+      transaction_amount: valor,
+      point_of_interaction: {
+        transaction_data: {
+          qr_code: `PIX-ESTATICO-CURSO-${courseId}-VALOR-${valor}`,
+          qr_code_base64: "iVBORw0KGgoAAAANSUhEUgAAAOAAAADhCAYAAADX9v6pAAAACXBIWXMAAAsTAAALEwEAmpwYAAABlWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSfvu78nIGlkPSdXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQnPz4LBoxmAAAALElEQVR4nO3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeBsYAAAB09j/NAAAAABJRU5ErkJggg==" 
+        }
+      }
+    });
+  } catch (error) {
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+  }
 }

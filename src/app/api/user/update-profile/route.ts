@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { db } from "../../../../../prisma/db";
+import { db } from "../../../../../prisma/db"; // Use o @ para não errar o caminho
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     const session = await auth();
     const body = await req.json();
     
-    // Limpa os dados (remove parênteses, pontos e traços)
+    // Limpa os dados
     const cleanCpf = body.cpf?.replace(/\D/g, "");
     const cleanPhone = body.phone?.replace(/\D/g, "");
 
@@ -15,16 +15,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Sessão inválida" }, { status: 401 });
     }
 
-    // Validação de comprimento
     if (!cleanCpf || cleanCpf.length !== 11) {
       return NextResponse.json({ error: "CPF inválido" }, { status: 400 });
     }
 
-    if (!cleanPhone || cleanPhone.length < 10 || cleanPhone.length > 11) {
-      return NextResponse.json({ error: "Número de celular inválido" }, { status: 400 });
-    }
-
-    // 1. Verificar se esse CPF já está em uso por OUTRO e-mail
+    // 1. Verifica se o CPF já existe em outro usuário
     const existingUserWithCpf = await db.user.findUnique({
       where: { cpf: cleanCpf }
     });
@@ -35,27 +30,19 @@ export async function POST(req: Request) {
       }, { status: 409 }); 
     }
 
-    // 2. Atualiza ou cria o usuário com os dois novos campos
-    const updatedUser = await db.user.upsert({
+    // 2. Salva no banco (Docker)
+    await db.user.update({
       where: { email: session.user.email },
-      update: { 
+      data: { 
         cpf: cleanCpf,
-        phone: cleanPhone // Salvando o celular
-      },
-      create: { 
-        email: session.user.email,
-        name: session.user.name || "",
-        cpf: cleanCpf,
-        phone: cleanPhone, // Salvando o celular no create também
-        image: session.user.image || ""
+        phone: cleanPhone 
       },
     });
 
-    console.log("🚀 Sucesso! Usuário atualizado com CPF e Celular:", updatedUser.email);
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
-    console.error("ERRO CRÍTICO NA API:", error.message);
-    return NextResponse.json({ error: "Erro interno no servidor" }, { status: 500 });
+    console.error("ERRO NA API:", error);
+    return NextResponse.json({ error: "Erro ao salvar no banco" }, { status: 500 });
   }
 }

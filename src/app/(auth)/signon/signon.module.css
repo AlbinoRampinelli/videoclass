@@ -1,54 +1,67 @@
+/* Ocupa a tela inteira e centraliza o bloco principal */
 .main {
-  display: flex;
-  width: 100%;
-  min-height: calc(100vh - 80px); /* Garante que respeite a altura da Navbar */
-  align-items: center;
-  justify-content: center;
-  background-color: #2e2e2e; /* Cinza escuro para dar contraste com o preto */
-  padding: 40px 20px;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    /* Remova o justifyContent center se quiser que ele cole no Aside */
+    padding: 40px; 
+    background-color: #121212;
 }
-/* 1. O Wrapper precisa garantir que os dois lados tenham a mesma altura */
+/* O wrapper agora controla a largura máxima e a distribuição */
 .wrapper {
     display: flex;
-    align-items: stretch; /* ISSO faz a imagem crescer junto com o formulário */
-    background-color: #1a1a1a;
-    border-radius: 12px;
-    overflow: hidden;
-    min-height: 850px; /* Altura mínima para acomodar todos os campos */
     width: 100%;
-    max-width: 1100px;
-    margin: 40px auto;
+    /* Aumente aqui para o rapaz aparecer e o formulário respirar */
+    max-width: 1200px; 
+    margin: 0 auto; /* Centraliza o bloco dentro do espaço que sobra */
+    background: #1e1e1e;
+    border-radius: 24px;
+    overflow: hidden;
+    min-height: 750px;
 }
-
-/* 2. Lado da Imagem (Ajuste para cobrir tudo) */
+/* Lado da Imagem: ocupa 55% do espaço */
 .bannerContainer {
+    flex: 2.0; 
     position: relative;
-    flex: 1.2;
-    display: flex; /* Garante que o container ocupe a altura toda */
+    display: block;
 }
 .bannerImage {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important; 
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 /* Garante que o container de texto não corte nada */
 /* O contêiner do formulário (Lado direito) */
+/* Reduz o espaçamento interno do container para caber tudo */
+/* Lado do Formulário: ocupa o restante com respiro interno */
 .container {
-    flex: 1;                /* Deixa ele crescer... */
-    min-width: 450px;       /* ...mas NUNCA deixa ficar menor que 450px */
-    padding: 40px;
-    background-color: #1a1a1a;
+    flex: 1;
+    padding: 40px 60px; /* Aumentamos o padding lateral */
     display: flex;
     flex-direction: column;
     justify-content: center;
-    z-index: 2;             /* Garante que fique acima de qualquer fundo */
+    background-color: #1e1e1e;
 }
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px; /* Aumenta o respiro entre os campos */
+/* Ajuste nos títulos para não ficarem colados */
+.container h1 {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    color: #fff;
 }
 
+.container h2 {
+    font-size: 1rem;
+    color: #aaa;
+    margin-bottom: 30px;
+}
+/* Deixa o formulário mais denso */
+/* Formulário mais largo e organizado */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px; /* Mais espaço entre os campos */
+}
 /* Ajuste crítico para os Inputs e CPF */
 .form > div {
   width: 100%;
@@ -212,4 +225,19 @@
     align-items: center;
     gap: 5px;
     font-weight: bold;
+}
+/* Estilo da mensagem de erro na base */
+.errorMessageBottom {
+    color: #ff4d4d;
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+    background: rgba(255, 77, 77, 0.1);
+    padding: 6px;
+    border-radius: 4px;
+    text-align: center;
+}
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }

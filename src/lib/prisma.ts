@@ -1,12 +1,13 @@
 import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
-// Removemos o dotenv.config() daqui pois ele quebra o Middleware
 export const prisma =
-  globalForPrisma.prisma ||
+  globalForPrisma.prisma ??
   new PrismaClient({
-    log: ["query", "error", "warn"],
+    log: ["query"], // Mantenha os logs para vermos a mágica acontecer
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
