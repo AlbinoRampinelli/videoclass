@@ -1,48 +1,35 @@
-import { auth } from "@/auth";
-import { db } from "../../../../../prisma/db"; // Use o @ para não errar o caminho
+import { prisma as db } from "../../../../lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const session = await auth();
     const body = await req.json();
-    
-    // Limpa os dados
-    const cleanCpf = body.cpf?.replace(/\D/g, "");
-    const cleanPhone = body.phone?.replace(/\D/g, "");
+    const { email, userType, schoolName } = body;
 
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Sessão inválida" }, { status: 401 });
+    console.log(" [DEBUG] Tentando atualizar:", email);
+
+    // Teste 1: O usuário existe?
+    const user = await db.user.findUnique({ where: { email } });
+    if (!user) {
+      console.log(" [ERRO] Usuário não encontrado no banco!");
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 400 });
     }
 
-    if (!cleanCpf || cleanCpf.length !== 11) {
-      return NextResponse.json({ error: "CPF inválido" }, { status: 400 });
-    }
-
-    // 1. Verifica se o CPF já existe em outro usuário
-    const existingUserWithCpf = await db.user.findUnique({
-      where: { cpf: cleanCpf }
-    });
-
-    if (existingUserWithCpf && existingUserWithCpf.email !== session.user.email) {
-      return NextResponse.json({ 
-        error: "Este CPF já está vinculado a outra conta." 
-      }, { status: 409 }); 
-    }
-
-    // 2. Salva no banco (Docker)
+    // Teste 2: Atualização
     await db.user.update({
-      where: { email: session.user.email },
+      where: { email },
       data: { 
-        cpf: cleanCpf,
-        phone: cleanPhone 
+        userType: userType as any, 
+        schoolName: schoolName 
       },
     });
 
+    console.log(" ✅ [SUCESSO] Banco atualizado!");
     return NextResponse.json({ success: true });
 
   } catch (error: any) {
-    console.error("ERRO NA API:", error);
-    return NextResponse.json({ error: "Erro ao salvar no banco" }, { status: 500 });
+    // ESSE LOG VAI APARECER NO TERMINAL EM VERMELHO
+    console.error(" ❌ [ERRO CRÍTICO NO PRISMA]:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }

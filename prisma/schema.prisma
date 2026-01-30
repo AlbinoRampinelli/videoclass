@@ -9,34 +9,34 @@ datasource db {
 }
 
 model User {
-  id               String    @id @default(cuid())
-  name             String?
-  email            String?   @unique // Opcional se você quiser permitir troca
-  cpf              String?   @unique // Chave Mestre Real
-  phone            String?
+  id                String       @id @default(cuid())
+  name              String?
+  email             String?      @unique
+  cpf               String?      @unique
+  passwordHash      String?
   codigoVerificacao String?
-  passwordHash      String? // PRECISA ter a interrogação ?
+  phone             String?
+  schoolName        String?
+  userType          UserType     @default(ALUNO)
   accounts          Account[]
-  sessions          Session[]
   enrollments       Enrollment[]
+  sessions          Session[]
 }
 
-// OBRIGATÓRIO para o PrismaAdapter funcionar com Google:
 model Account {
   id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -66,4 +66,11 @@ model Enrollment {
   createdAt DateTime @default(now())
   course    Course   @relation(fields: [courseId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
+}
+
+enum UserType {
+  ALUNO
+  PAI
+  PROFESSOR
+  OUTRO
 }

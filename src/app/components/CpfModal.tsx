@@ -1,124 +1,102 @@
 "use client";
+
 import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function CpfModal({ userName }: { userName: string }) {
   const [cpf, setCpf] = useState("");
-  const [phone, setPhone] = useState(""); // Novo estado para celular
+  const [phone, setPhone] = useState("");
+  const [userType, setUserType] = useState<"PAI" | "ALUNO">("PAI"); // Novo
+  const [schoolName, setSchoolName] = useState(""); // Novo
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { update } = useSession();
+  const router = useRouter();
 
-  // Máscara de CPF: 000.000.000-00
-  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setError(null);
-    let value = e.target.value.replace(/\D/g, "");
-    value = value.replace(/(\d{3})(\d)/, "$1.$2");
-    value = value.replace(/(\d{3})(\d)/, "$1.$2");
-    value = value.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-    setCpf(value);
-  };
-
-  // Máscara de Celular: (00) 00000-0000
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setError(null);
-    let value = e.target.value.replace(/\D/g, "");
-    value = value.replace(/^(\d{2})(\d)/g, "($1) $2");
-    value = value.replace(/(\d{5})(\d)/, "$1-$2");
-    setPhone(value);
-  };
-
-  const handleSubmit = async () => {
-    if (cpf.length < 14) {
-      setError("CPF incompleto.");
-      return;
-    }
-    if (phone.length < 14) {
-      setError("Celular incompleto.");
-      return;
-    }
-
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
-      const response = await fetch("/api/user/update-profile", {
+      const res = await fetch("/api/user/update-profile", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          cpf: cpf.replace(/\D/g, ""), 
-          phone: phone.replace(/\D/g, "") 
+          cpf, 
+          phone, 
+          userType, 
+          schoolName 
         }),
+        headers: { "Content-Type": "application/json" },
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || "Erro ao salvar os dados.");
-        setLoading(false);
-        return;
-      }
-
-      // O SEGREDO: Atualiza a sessão e espera um pouco antes do reload
-      await update(); // Força o NextAuth a buscar os dados novos do banco
-      
-      // Pequeno delay para o servidor processar o novo cookie
-      setTimeout(() => {
+      if (res.ok) {
+        // Recarrega a página para o `userDb` vir atualizado e o modal sumir
         window.location.reload(); 
-      }, 500);
-      
-    } catch (err) {
-      setError("Erro de conexão com o servidor.");
-      setLoading(false); // Destrava o botão se der erro de rede
+      } else {
+        alert("Erro ao salvar dados. Verifique o CPF.");
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
-  };
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
-      <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl max-w-md w-full text-center shadow-2xl">
-        <h2 className="text-2xl font-bold text-white mb-2">Olá, {userName}!</h2>
-        <p className="text-zinc-400 mb-6 text-sm">
-          Complete seu cadastro para acessar a plataforma.
-        </p>
-        
-        <div className="space-y-4 text-left">
-          {/* Campo CPF */}
-          <div>
-            <label className="text-xs text-zinc-500 ml-1">CPF</label>
-            <input 
-              type="text" 
-              placeholder="000.000.000-00"
-              disabled={loading}
-              className={`w-full bg-black border ${error?.includes('CPF') ? 'border-red-500' : 'border-zinc-700'} rounded-xl p-4 text-white text-center focus:border-[#81FE88] outline-none transition-all`}
-              value={cpf}
-              onChange={handleCpfChange}
-              maxLength={14}
-            />
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+      <div className="bg-zinc-900 border border-zinc-800 p-10 rounded-[3rem] max-w-md w-full shadow-2xl">
+        <h2 className="text-2xl font-black text-white italic uppercase mb-2">Olá, {userName}!</h2>
+        <p className="text-zinc-500 text-xs font-bold uppercase mb-8">Precisamos completar seu perfil para continuar.</p>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Seleção de Quem é você */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setUserType("PAI")}
+              className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all ${userType === 'PAI' ? 'bg-[#81FE88] text-black' : 'bg-zinc-800 text-zinc-500'}`}
+            >
+              Sou Pai / Mãe
+            </button>
+            <button
+              type="button"
+              onClick={() => setUserType("ALUNO")}
+              className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all ${userType === 'ALUNO' ? 'bg-[#81FE88] text-black' : 'bg-zinc-800 text-zinc-500'}`}
+            >
+              Sou Aluno
+            </button>
           </div>
 
-          {/* Campo Celular */}
-          <div>
-            <label className="text-xs text-zinc-500 ml-1">CELULAR</label>
-            <input 
-              type="text" 
-              placeholder="(00) 00000-0000"
-              disabled={loading}
-              className={`w-full bg-black border ${error?.includes('Celular') ? 'border-red-500' : 'border-zinc-700'} rounded-xl p-4 text-white text-center focus:border-[#81FE88] outline-none transition-all`}
-              value={phone}
-              onChange={handlePhoneChange}
-              maxLength={15}
-            />
-          </div>
-        </div>
+          <input
+            required
+            placeholder="Seu CPF"
+            className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-[#81FE88]"
+            value={cpf}
+            onChange={(e) => setCpf(e.target.value)}
+          />
 
-        {error && <p className="text-red-500 text-xs mt-4 text-center">{error}</p>}
-        
-        <button 
-          onClick={handleSubmit}
-          disabled={loading}
-          className="w-full mt-6 bg-[#81FE88] text-black font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
-        >
-          {loading ? "SALVANDO..." : "CONFIRMAR E ACESSAR"}
-        </button>
+          <input
+            required
+            placeholder="WhatsApp (com DDD)"
+            className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-[#81FE88]"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+
+          <input
+            required
+            placeholder="Qual sua escola?"
+            className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-[#81FE88]"
+            value={schoolName}
+            onChange={(e) => setSchoolName(e.target.value)}
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#81FE88] text-black font-black py-5 rounded-2xl uppercase italic hover:bg-[#6ee474] transition-all"
+          >
+            {loading ? "Salvando..." : "Acessar Vitrine"}
+          </button>
+        </form>
       </div>
     </div>
   );
