@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import staticData from '../checkout/[id]/data.json';
 
 export async function POST() {
   try {
@@ -10,7 +9,7 @@ export async function POST() {
       point_of_interaction: {
         transaction_data: {
           qr_code: "00020101021126580014br.gov.bcb.pix0114SUA-CHAVE-AQUI",
-          qr_code_base64: staticData.qr_code_base64
+          qr_code_base64:""
         }
       }
     });

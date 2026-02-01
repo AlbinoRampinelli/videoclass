@@ -1,25 +1,66 @@
 "use client";
 
-import { useState } from "react";
-import { AlertTriangle } from "lucide-react"; // Importe um ícone para dar peso visual
+import { useState, useEffect } from "react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
-export default function CpfModal({ userName }: { userName: string }) {
+export default function CpfModal({ 
+  userName, 
+  userId, 
+  isGoogleLogin = false 
+}: { 
+  userName: string, 
+  userId?: string, 
+  isGoogleLogin: boolean 
+}) {
   const [cpf, setCpf] = useState("");
   const [phone, setPhone] = useState("");
-  const [userType, setUserType] = useState<"PAI" | "ALUNO">("PAI");
-  const [schoolName, setSchoolName] = useState("");
+  
+  // Se for Google, inicializamos como ALUNO e Visitante automaticamente
+  const [userType, setUserType] = useState(isGoogleLogin ? "ALUNO" : ""); 
+  const [schoolName, setSchoolName] = useState(isGoogleLogin ? "Visitante Digital" : "");
+  
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null); // Estado para o erro
+  const [error, setError] = useState<string | null>(null);
+
+  // Máscaras de Input
+  const maskCPF = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})/, "$1-$2")
+      .replace(/(-\d{2})\d+?$/, "$1");
+  };
+
+  const maskPhone = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{5})(\d)/, "$1-$2")
+      .replace(/(-\d{4})\d+?$/, "$1");
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    
+    // Validação de segurança
+    if (!userType) return setError("Por favor, selecione seu tipo de perfil.");
+    if (cpf.length < 14) return setError("CPF incompleto.");
+    if (phone.length < 14) return setError("Telefone incompleto.");
+
     setLoading(true);
-    setError(null); // Reseta o erro ao tentar novamente
+    setError(null);
 
     try {
       const res = await fetch("/api/user/update-profile", {
         method: "POST",
-        body: JSON.stringify({ cpf, phone, userType, schoolName }),
+        body: JSON.stringify({ 
+          userId, 
+          cpf, 
+          phone,
+          userType,
+          schoolName 
+        }), 
         headers: { "Content-Type": "application/json" },
       });
 
@@ -27,98 +68,100 @@ export default function CpfModal({ userName }: { userName: string }) {
         window.location.reload(); 
       } else {
         const data = await res.json();
-        // Mensagem impactante
-        setError(data.error || "Este CPF já está cadastrado em nossa base.");
+        setError(data.error || "Ocorreu um erro ao salvar. Verifique se o CPF já está em uso.");
       }
     } catch (error) {
-      setError("Falha na conexão. Tente novamente.");
+      setError("Falha na conexão com o servidor.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
-      <div className={`bg-zinc-900 border ${error ? 'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.2)] animate-shake' : 'border-zinc-800'} p-10 rounded-[3rem] max-w-md w-full shadow-2xl transition-all duration-300`}>
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
+      <div className={`bg-zinc-900 border ${error ? 'border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.1)]' : 'border-zinc-800'} p-8 md:p-10 rounded-[3rem] max-w-md w-full transition-all duration-300 max-h-[90vh] overflow-y-auto`}>
         
-        <h2 className="text-2xl font-black text-white italic uppercase mb-2">Olá, {userName}!</h2>
-        <p className="text-zinc-500 text-xs font-bold uppercase mb-8">Precisamos completar seu perfil para continuar.</p>
+        <div className="flex items-center gap-2 mb-2">
+          <CheckCircle2 className="text-[#81FE88]" size={16} />
+          <span className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em]">
+            {isGoogleLogin ? "Verificação de Segurança" : "Configuração de Perfil"}
+          </span>
+        </div>
 
-        {/* MENSAGEM DE ERRO EM VERMELHO VIBRANTE */}
+        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-1">
+          Olá{userName ? `, ${userName.split(' ')[0]}` : "!"}
+        </h2>
+        <p className="text-zinc-400 text-sm mb-6">
+          {isGoogleLogin 
+            ? "Para continuar sua compra, informe seu CPF e WhatsApp." 
+            : "Complete seu perfil para acessar a plataforma."}
+        </p>
+
         {error && (
-          <div className="mb-6 bg-red-500/10 border border-red-500/50 p-4 rounded-2xl flex items-center gap-3">
-            <AlertTriangle className="text-red-500 shrink-0" size={20} />
-            <p className="text-red-500 text-xs font-black uppercase leading-tight">
-              {error}
-            </p>
+          <div className="mb-6 bg-red-500/10 border border-red-500/50 p-4 rounded-2xl flex items-center gap-3 text-red-500 text-[10px] font-black uppercase italic">
+            <AlertTriangle size={20} className="shrink-0" />
+            {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setUserType("PAI")}
-              className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all ${userType === 'PAI' ? 'bg-[#81FE88] text-black' : 'bg-zinc-800 text-zinc-500'}`}
-            >
-              Sou Pai / Mãe
-            </button>
-            <button
-              type="button"
-              onClick={() => setUserType("ALUNO")}
-              className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all ${userType === 'ALUNO' ? 'bg-[#81FE88] text-black' : 'bg-zinc-800 text-zinc-500'}`}
-            >
-              Sou Aluno
-            </button>
-          </div>
-
-          <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-3">
+            {/* CPF - SEMPRE VISÍVEL */}
+            <label className="text-[10px] font-black text-zinc-600 uppercase ml-2 tracking-widest">Documento (CPF)</label>
             <input
               required
-              placeholder="Seu CPF"
-              className={`w-full bg-zinc-800 border ${error ? 'border-red-500/50' : 'border-zinc-700'} p-4 rounded-2xl text-white outline-none focus:border-[#81FE88] transition-colors`}
+              placeholder="000.000.000-00"
+              className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-[#81FE88] transition-colors"
               value={cpf}
-              onChange={(e) => setCpf(e.target.value)}
+              onChange={(e) => setCpf(maskCPF(e.target.value))}
             />
 
+            {/* TELEFONE - SEMPRE VISÍVEL */}
+            <label className="text-[10px] font-black text-zinc-600 uppercase ml-2 tracking-widest">Whatsapp</label>
             <input
               required
-              placeholder="WhatsApp (com DDD)"
+              placeholder="(00) 00000-0000"
               className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-[#81FE88] transition-colors"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(maskPhone(e.target.value))}
             />
 
-            <input
-              required
-              placeholder="Qual sua escola?"
-              className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-[#81FE88] transition-colors"
-              value={schoolName}
-              onChange={(e) => setSchoolName(e.target.value)}
-            />
+            {/* CAMPOS CONDICIONAIS: SÓ APARECEM SE NÃO FOR GOOGLE */}
+            {!isGoogleLogin && (
+              <>
+                <label className="text-[10px] font-black text-zinc-600 uppercase ml-2 tracking-widest">Eu sou</label>
+                <select 
+                  required
+                  className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-[#81FE88] transition-colors appearance-none"
+                  value={userType}
+                  onChange={(e) => setUserType(e.target.value)}
+                >
+                  <option value="">Selecione...</option>
+                  <option value="ALUNO">Aluno</option>
+                  <option value="PROFESSOR">Professor / Gestor</option>
+                  <option value="PAI">Pai / Responsável</option>
+                </select>
+
+                <label className="text-[10px] font-black text-zinc-600 uppercase ml-2 tracking-widest">Nome da Escola (Opcional)</label>
+                <input
+                  placeholder="Ex: Escola Estadual..."
+                  className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-[#81FE88] transition-colors"
+                  value={schoolName}
+                  onChange={(e) => setSchoolName(e.target.value)}
+                />
+              </>
+            )}
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className={`w-full ${error ? 'bg-red-500 hover:bg-red-600' : 'bg-[#81FE88] hover:bg-[#6ee474]'} text-black font-black py-5 rounded-2xl uppercase italic transition-all shadow-lg`}
+            className="w-full mt-4 bg-[#81FE88] hover:bg-[#6ee474] text-black font-black py-5 rounded-2xl uppercase italic transition-all shadow-lg disabled:opacity-50"
           >
-            {loading ? "Verificando..." : error ? "Tentar Novamente" : "Acessar Vitrine"}
+            {loading ? "Salvando..." : "Finalizar e Acessar Vitrine"}
           </button>
         </form>
       </div>
-
-      {/* Estilo para a animação de tremor */}
-      <style jsx>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
-        }
-        .animate-shake {
-          animation: shake 0.2s ease-in-out 0s 2;
-        }
-      `}</style>
     </div>
   );
 }

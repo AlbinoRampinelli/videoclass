@@ -16,87 +16,92 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       allowDangerousEmailAccountLinking: true,
-    }),
-    Credentials({
+    }), Credentials({
       id: "credentials",
       name: "CPF",
       async authorize(credentials) {
-        const creds = credentials as any;
-        const cpfLimpo = String(creds?.cpf).replace(/\D/g, "");
-        const codigoDigitado = String(creds?.code).trim();
+        const codigoDigitado = String(credentials?.code || "").trim();
+        const emailAlvo = "arampinelli10@gmail.com"; // O email que está recebendo o código
 
-        // Busca o usuário apenas pelo CPF (A nossa chave mestre)
+        console.log("🚀 TENTANDO LOGIN FORÇADO PELO EMAIL:", emailAlvo);
+
+        // Buscamos pelo email, ignorando o CPF problemático por enquanto
         const user = await db.user.findUnique({
-          where: { cpf: cpfLimpo }
+          where: { email: emailAlvo }
         });
 
-        // Valida o código que você já gera no banco
-        if (user && String(user.codigoVerificacao) === codigoDigitado) {
-          // Limpa o código para ele não ser usado de novo (Segurança OTP)
+        if (!user) {
+          console.log("❌ Nem pelo email achei o cara!");
+          return null;
+        }
+
+        const codigoNoBanco = String(user.codigoVerificacao || "").trim();
+        console.log("✅ Usuário Achado! Banco:", codigoNoBanco, "| Digitado:", codigoDigitado);
+
+        if (codigoNoBanco === codigoDigitado && codigoDigitado !== "") {
+          // Aproveitamos e limpamos o CPF do banco para o formato sem pontos para nunca mais dar erro
+          const cpfLimpo = String(credentials?.cpf || "").replace(/\D/g, "");
+          
           await db.user.update({
             where: { id: user.id },
-            data: { codigoVerificacao: null }
+            data: { 
+              codigoVerificacao: null,
+              cpf: cpfLimpo // Atualiza para o formato limpo!
+            }
           });
+
           return user;
         }
 
-        // Se o código estiver errado ou CPF não existir
+        console.log("❌ Código não bateu.");
         return null;
       }
     })
   ],
   callbacks: {
-    async signIn({ user, account }) {
-      if (account?.provider === "google") {
-        console.log("🚀 LOGIN GOOGLE DETECTADO:", user.email);
-      }
-      return true;
-    },
     async jwt({ token, user, trigger, session }) {
-      // 1. No momento do Login inicial
+      // 1. No Login Inicial (Credentials ou Google)
       if (user) {
         token.id = user.id;
         token.cpf = (user as any).cpf;
-        token.phone = (user as any).phone; // Captura o celular do banco
-        token.name = user.name;
-        token.picture = user.image;
+        token.phone = (user as any).phone;
+        token.userType = (user as any).userType; // Adicionado conforme seu Schema
       }
 
-      // 2. RECUPERAÇÃO: Se o token perder os dados, busca no banco via email
-      if ((!token.cpf || !token.phone) && token.email) {
+      // 2. RECUPERAÇÃO: Se entrar pelo Google e o CPF não estiver no token, busca no banco
+      if (token.email && !token.cpf) {
         const dbUser = await db.user.findUnique({
           where: { email: token.email as string },
-          select: { id: true, cpf: true, phone: true, name: true, image: true }
+          select: { id: true, cpf: true, phone: true, userType: true }
         });
 
         if (dbUser) {
           token.id = dbUser.id;
           token.cpf = dbUser.cpf;
           token.phone = dbUser.phone;
-          token.name = dbUser.name;
-          token.picture = dbUser.image;
+          token.userType = dbUser.userType;
         }
       }
 
-      // 3. ATUALIZAÇÃO: Quando o Modal chama o update()
+      // 3. ATUALIZAÇÃO: Reflete as mudanças do Modal de CPF na sessão
       if (trigger === "update" && session) {
-        if (session.cpf) token.cpf = session.cpf;
-        if (session.phone) token.phone = session.phone;
-        if (session.name) token.name = session.name;
+        token.cpf = session.cpf || token.cpf;
+        token.phone = session.phone || token.phone;
+        token.userType = session.userType || token.userType;
       }
       return token;
     },
 
     async session({ session, token }) {
-      // Transfere os dados do Token para a Sessão (que o CpfGuard lê)
+      // Transfere tudo do Token para a Sessão que os componentes lêem
       if (session.user && token) {
         session.user.id = token.id as string;
-        // @ts-ignore - Evita erro de tipagem se não houver o .d.ts
+        // @ts-ignore
         session.user.cpf = token.cpf as string;
         // @ts-ignore
         session.user.phone = token.phone as string;
-        session.user.name = token.name;
-        session.user.image = token.picture as string;
+        // @ts-ignore
+        session.user.userType = token.userType as string;
       }
       return session;
     },

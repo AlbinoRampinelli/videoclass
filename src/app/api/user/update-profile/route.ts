@@ -1,35 +1,51 @@
-import { prisma as db } from "../../../../lib/prisma";
+import { auth } from "@/auth"; // Certifique-se que o arquivo auth.ts está na sua pasta /src
+import { db } from "../../../../../prisma/db";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
+    // Pega a sessão usando o padrão do Auth.js v5 / Next.js 15
+    const session = await auth();
+    
     const body = await req.json();
-    const { email, userType, schoolName } = body;
+    const { cpf, phone } = body;
 
-    console.log(" [DEBUG] Tentando atualizar:", email);
-
-    // Teste 1: O usuário existe?
-    const user = await db.user.findUnique({ where: { email } });
-    if (!user) {
-      console.log(" [ERRO] Usuário não encontrado no banco!");
-      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 400 });
+    // Se não houver e-mail na sessão, o Prisma vai dar erro de 'undefined'.
+    // Esta verificação impede que o servidor trave (tela vermelha).
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: "Você precisa estar logado para completar o perfil." }, 
+        { status: 401 }
+      );
     }
 
-    // Teste 2: Atualização
-    await db.user.update({
-      where: { email },
+    // Atualiza o usuário que acabou de logar via Google
+    const updatedUser = await db.user.update({
+      where: { 
+        email: session.user.email 
+      },
       data: { 
-        userType: userType as any, 
-        schoolName: schoolName 
+        cpf: cpf,
+        phone: phone,
       },
     });
 
-    console.log(" ✅ [SUCESSO] Banco atualizado!");
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, user: updatedUser });
 
   } catch (error: any) {
-    // ESSE LOG VAI APARECER NO TERMINAL EM VERMELHO
-    console.error(" ❌ [ERRO CRÍTICO NO PRISMA]:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    console.error("ERRO_PRISMA:", error);
+
+    // Se o CPF já existir no banco, o Prisma lança o erro P2002
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { error: "Este CPF já está cadastrado em nossa base." }, 
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: "Ocorreu um erro interno ao salvar seus dados." }, 
+      { status: 500 }
+    );
   }
 }

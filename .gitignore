@@ -7,7 +7,7 @@
 .next
 dist
 pgdata_video/
-
+./deploy.sh
 /.pnp
 .pnp.*
 .yarn/*

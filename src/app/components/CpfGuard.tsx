@@ -1,20 +1,25 @@
-import { auth } from "../../auth";
+"use client";
+
+import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import CpfModal from "./CpfModal";
 
-export default async function CpfGuard({ children }: { children: React.ReactNode }) {
-  const session = await auth();
+export default function CpfGuard() {
+  const { data: session, status } = useSession();
+  const pathname = usePathname();
 
-  // Se não houver sessão, não faz nada (o middleware ou login tratam)
-  if (!session?.user) return <>{children}</>;
+  // TRAVA DE OURO: Se a rota for admin, mata qualquer lógica do Guard
+  if (pathname.startsWith('/admin')) return null;
 
-  // O Porteiro verifica se falta o CPF ou o Celular
-  const precisaCompletarCadastro = !session.user.cpf || !session.user.phone;
+  // Enquanto carrega a sessão, não mostra nada
+  if (status === "loading") return null;
 
-  if (precisaCompletarCadastro) {
-    // Passa o nome para o modal ser gentil
-    return <CpfModal userName={session.user.name || "Usuário"} />;
+  const user = session?.user as any;
+
+  // Só mostra o modal se: estiver logado, NÃO tiver CPF e NÃO estiver no admin
+  if (user && !user.cpf) {
+    return <CpfModal userName={user.name || "Usuário"} />;
   }
 
-  // Se tiver tudo, libera o acesso aos filhos (o site)
-  return <>{children}</>;
+  return null;
 }

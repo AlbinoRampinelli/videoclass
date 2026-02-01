@@ -32,7 +32,7 @@ export default function CheckoutNovo({ params }: { params: Promise<{ id: string 
         setLoading(false);
     }
 };
-    };
+
     console.log("RENDERIZANDO COMPONENTE - dadosPix atual:", dadosPix);
     return (
         <div className="p-6 max-w-md mx-auto min-h-screen bg-white text-zinc-900 font-sans">

@@ -1,0 +1,18 @@
+services:
+  app:
+    env_file:
+      - .env.production
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: videoclass_app
+    restart: always
+    ports:
+      - "3007:3000"
+    networks:
+      - dds
+
+networks:
+  dds:
+    external: true
+
