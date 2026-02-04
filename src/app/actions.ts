@@ -1,64 +1,84 @@
 "use server"
 
-import { db } from "../../prisma/db";
-import { redirect } from "next/navigation";
-import { signOut } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+import { revalidatePath } from "next/cache";
 
 /**
- * ACTION: Cadastro de Usuário (Sem Senha)
+ * Função exigida pela página de SignOn (Cadastro manual)
+ * Resolve o erro de 'Export createUser doesn't exist' no build.
  */
 export async function createUser(prevState: any, formData: FormData) {
-    try {
-        const name = formData.get("name") as string;
-        const email = formData.get("email") as string;
-        
-        // Limpamos CPF e Phone para salvar apenas números
-        const cpf = (formData.get("cpf") as string)?.replace(/\D/g, "");
-        const phone = (formData.get("phone") as string)?.replace(/\D/g, "");
-
-        // 1. Validações básicas (Removido senha daqui)
-        if (!name || !email || !cpf || !phone) {
-            return { message: "Preencha todos os campos obrigatórios." };
-        }
-
-        if (cpf.length !== 11) {
-            return { message: "CPF inválido. Digite os 11 números." };
-        }
-
-        // 2. Verificar se o CPF já existe
-        const existingUser = await db.user.findUnique({
-            where: { cpf: cpf }
-        });
-
-        if (existingUser) {
-            return { message: "Este CPF já está cadastrado. Vá para a tela de login." };
-        }
-
-        // 3. Criar o usuário no Banco (Sem o campo password)
-        await db.user.create({
-            data: {
-                name,
-                email,
-                cpf,
-                phone,
-            },
-        });
-
-        console.log("✅ Usuário criado com sucesso:", email);
-
-    } catch (error: any) {
-        if (error.message === 'NEXT_REDIRECT') throw error; // Necessário para o redirect funcionar
-        console.error("ERRO AO CRIAR USUÁRIO:", error);
-        return { message: "Erro interno ao criar conta." };
-    }
-
-    // Redireciona para o login para ele receber o código OTP
-    redirect("/signin");
+  // Como o foco agora é Google Login, deixamos um aviso caso alguém tente usar o manual
+  return { error: "O cadastro manual está desativado. Por favor, use o Login via Google." };
 }
+export async function updateCourseAction(courseId: string, formData: FormData) {
+  const title = formData.get("title") as string;
+  const price = parseFloat(formData.get("price") as string);
+  const duration = formData.get("duration") as string;
+  // Transforma a string de tópicos em um Array
+  const featuresString = formData.get("features") as string;
+  const features = featuresString.split(",").map(f => f.trim()).filter(f => f !== "");
 
+  try {
+    await db.course.update({
+      where: { id: courseId },
+      data: {
+        title,
+        price,
+        duration,
+        features,
+      },
+    });
+    
+    revalidatePath("/admin/courses");
+    revalidatePath("/vitrine");
+    revalidatePath("/"); // Atualiza a Landing Page também
+    
+    return { success: true };
+  } catch (error) {
+    return { error: "Erro ao atualizar curso." };
+  }
+}
 /**
- * ACTION: Logout (Resolve o erro do componente Aside)
+ * Função para atualizar o perfil do usuário (CPF/Tipo) e registrar interesse.
+ * Esta é a lógica que você enviou na API, agora como Server Action.
  */
-export async function handleLogout() {
-    await signOut({ redirectTo: "/signin" });
+export async function handleLeadAction(data: { cpf: string; userType: string; courseId: string }) {
+  const session = await auth();
+  
+  if (!session?.user?.email) {
+    return { error: "Você precisa estar logado." };
+  }
+
+  try {
+    const { cpf, userType, courseId } = data;
+
+    // 1. Atualiza o CPF e Tipo no perfil do usuário
+    await prisma.user.update({
+      where: { email: session.user.email },
+      data: { 
+        cpf: cpf,
+        userType: userType 
+      }
+    });
+
+    // 2. Cria o registro de lead (interesse no curso)
+    const lead = await prisma.lead.create({
+      data: {
+        userId: session.user.id,
+        courseId: courseId,
+      }
+    });
+
+    // Limpa o cache para mostrar os dados atualizados
+    revalidatePath("/vitrine");
+    
+    return { success: true, lead };
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      return { error: "Este CPF já está cadastrado em outra conta." };
+    }
+    return { error: "Erro interno ao processar seus dados." };
+  }
 }

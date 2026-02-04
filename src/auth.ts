@@ -41,10 +41,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (codigoNoBanco === codigoDigitado && codigoDigitado !== "") {
           // Aproveitamos e limpamos o CPF do banco para o formato sem pontos para nunca mais dar erro
           const cpfLimpo = String(credentials?.cpf || "").replace(/\D/g, "");
-          
+
           await db.user.update({
             where: { id: user.id },
-            data: { 
+            data: {
               codigoVerificacao: null,
               cpf: cpfLimpo // Atualiza para o formato limpo!
             }
@@ -104,6 +104,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.userType = token.userType as string;
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      // Se o usuário acabou de logar e o destino é a home ou o signin,
+      // mandamos ele direto para a vitrine.
+      if (url === baseUrl || url.includes("/signin") || url === `${baseUrl}/`) {
+        return `${baseUrl}/vitrine`;
+      }
+
+      // Se houver um callbackUrl específico (ex: link de um curso), respeita ele
+      if (url.startsWith(baseUrl)) return url;
+
+      return baseUrl;
     },
   },
   basePath: "/api/auth",

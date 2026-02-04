@@ -19,7 +19,7 @@ model User {
   phone             String?
   schoolName        String?
   emailVerified     DateTime?
-  userType          UserType     @default(ALUNO)
+  userType          UserType     @default(RESPONSAVEL)
   createdAt         DateTime     @default(now()) // <--- ADICIONE ESTA LINHA
   accounts          Account[]
   enrollments       Enrollment[]
@@ -61,6 +61,8 @@ model Course {
   format      CourseFormat @default(ONLINE)
   description String?
   price       Float
+  duration    String?      // ADICIONADO: Ex: "40h"
+  features    String[]     // ADICIONADO: ["Vitalício", "Kit Incluso"]
   imageUrl    String?
   enrollments Enrollment[]
 }
@@ -78,7 +80,7 @@ model Enrollment {
 
 enum UserType {
   ALUNO
-  PAI
+  RESPONSAVEL
   PROFESSOR
   OUTRO
 }
@@ -90,4 +92,17 @@ model Interest {
   createdAt DateTime @default(now())
 
   @@unique([userId, courseId]) // Um interesse por curso por usuário
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  nome      String
+  email     String   @unique
+  cpf       String   @unique
+  userType String?
+  whatsapp  String
+  escola    String?
+  cursoId   String?  // Para saber em qual curso ele se interessou
+  createdAt DateTime @default(now())
+  status    String   @default("PENDENTE") // PENDENTE, CONVERTIDO, DESISTENTE
 }

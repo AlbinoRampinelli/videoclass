@@ -9,6 +9,7 @@ import ModalInteresse from "../ModalInteresse";
 export default function VitrineCursos({ userDb, session, courses = [], travarCpf = false }: any) {
   const [comprasLocais, setComprasLocais] = useState<string[]>([]);
   const [cursoInteresse, setCursoInteresse] = useState<any>(null);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -32,6 +33,7 @@ export default function VitrineCursos({ userDb, session, courses = [], travarCpf
 
       {cursoInteresse && (
         <ModalInteresse
+          key={cursoInteresse?.id}
           course={cursoInteresse}
           onClose={() => setCursoInteresse(null)}
           userDb={userDb}
@@ -49,10 +51,17 @@ export default function VitrineCursos({ userDb, session, courses = [], travarCpf
 
       <div className="rounded-xl md:rounded-[1.5rem] overflow-hidden border border-zinc-800 shadow-2xl mb-6 max-w-md lg:max-w-lg ml-0 bg-zinc-900">
         <div className="aspect-video w-full">
-          <VideoPlayer
-            src="https://nlzzion4sqcvrbfv.public.blob.vercel-storage.com/PYTON%20-%204K.mov"
-            title="Aula em destaque"
-          />
+          {/* Usando a tag nativa para testar a acessibilidade direta */}
+          <video
+            controls
+            className="w-full h-full object-cover"
+            preload="metadata"
+            playsInline
+          >
+            <source src="/python-video.mp4" type="video/mp4" />
+            {/* Adicione uma versão MP4 aqui assim que converter */}
+            Seu navegador não suporta a reprodução de vídeos.
+          </video>
         </div>
       </div>
 

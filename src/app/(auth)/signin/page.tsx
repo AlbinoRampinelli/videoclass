@@ -12,6 +12,7 @@ import FormLogin from '../../components/FormLogin';
 import { validarCPF } from '@/utils/validaCpf'
 
 export default function SignIn() {
+  
   return (
     <main className={loginStyles.main}>
       {/* Lado Esquerdo */}

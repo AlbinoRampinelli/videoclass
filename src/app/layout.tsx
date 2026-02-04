@@ -11,15 +11,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-br">
       <body className="bg-[#09090b] text-white antialiased">
         <SessionWrapper> {/* Agora ele vai reconhecer o componente */}
-          <div className="flex min-h-screen">
-            
-            <Aside />
-            
-            <main className="flex-1 flex flex-col items-center">
-              <div className="w-full max-w-7xl">
+          <div className="flex min-h-screen w-full overflow-x-hidden">
+
+            {/* O Aside fixo com largura garantida */}
+            <div className="shrink-0">
+              <Aside />
+            </div>
+
+            {/* O Conteúdo que se adapta ao espaço que sobra */}
+            <main className="flex-1 w-full overflow-y-auto">
+              <div className="w-full max-w-7xl mx-auto">
                 {children}
               </div>
             </main>
+
           </div>
         </SessionWrapper>
       </body>

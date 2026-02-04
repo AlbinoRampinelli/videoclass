@@ -4,70 +4,46 @@ import { useRouter } from "next/navigation";
 import { X, UserCircle2 } from "lucide-react";
 
 interface ModalLoginProps {
-  isOpen: boolean;
-  onClose: () => void;
+    isOpen: boolean;
+    onClose: () => void;
+    callbackUrl?: string;
 }
 
-export default function ModalLogin({ isOpen, onClose }: ModalLoginProps) {
-  const router = useRouter();
+export default function ModalLogin({ isOpen, onClose, callbackUrl }: ModalLoginProps) {
+    const router = useRouter();
 
-  if (!isOpen) return null;
+    // 1. A FUNÇÃO DEVE FICAR AQUI (FORA DO RETURN)
+    const handleLogin = () => {
+        const targetPath = callbackUrl || "/vitrine";
+        const destination = `/signin?callbackUrl=${encodeURIComponent(targetPath)}`;
+        onClose();
+        router.push(destination);
+    };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop com desfoque suave */}
-      <div 
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm" 
-        onClick={onClose}
-      />
+    if (!isOpen) return null;
 
-      {/* Card do Modal */}
-      <div className="relative bg-zinc-900 border border-zinc-800 w-full max-w-[400px] rounded-[3rem] p-10 shadow-2xl text-center overflow-hidden">
-        
-        {/* Detalhe de luz decorativa (Makershouse Style) */}
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-[#81FE88]/10 rounded-full blur-3xl" />
-        
-        {/* Botão Fechar */}
-        <button 
-          onClick={onClose}
-          className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors"
-        >
-          <X size={20} />
-        </button>
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
-        <div className="relative z-10">
-          {/* Ícone amigável de usuário */}
-          <div className="w-20 h-20 bg-[#81FE88]/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-[#81FE88]/20 text-[#81FE88]">
-            <UserCircle2 size={40} strokeWidth={1.5} />
-          </div>
+            <div className="relative bg-zinc-900 border border-zinc-800 w-full max-w-[400px] rounded-[3rem] p-10 shadow-2xl text-center">
+                {/* ... (restante do seu layout do modal) ... */}
 
-          <h2 className="text-2xl font-black text-white italic uppercase mb-2 tracking-tighter">
-            Sua jornada começa aqui
-          </h2>
-          
-          <p className="text-zinc-400 text-[11px] font-bold uppercase tracking-[0.15em] mb-8 leading-relaxed px-2">
-            Para garantir sua vaga e acessar o ambiente de aulas, precisamos que você se identifique.
-          </p>
+                <div className="relative z-10">
+                    {/* ... (ícone e textos) ... */}
 
-          {/* Botão que leva para o Signin Geral */}
-          <button
-            onClick={() => {
-              onClose();
-              router.push("/signin");
-            }}
-            className="w-full bg-[#81FE88] hover:bg-[#6ee474] text-black font-black py-5 rounded-2xl flex items-center justify-center gap-3 transition-all transform hover:scale-[1.02] shadow-[0_10px_20px_rgba(129,254,136,0.15)]"
-          >
-            FAZER LOGIN PARA CONTINUAR
-          </button>
+                    <button
+                        onClick={handleLogin} // 2. O BOTÃO APENAS CHAMA A FUNÇÃO
+                        className="w-full bg-[#81FE88] hover:bg-[#6ee474] text-black font-black py-5 rounded-2xl transition-all"
+                    >
+                        FAZER LOGIN PARA CONTINUAR
+                    </button>
 
-          <button 
-            onClick={onClose}
-            className="mt-6 text-[10px] text-zinc-500 uppercase font-bold tracking-widest hover:text-zinc-300 transition-colors"
-          >
-            Ainda não tenho interesse
-          </button>
+                    <button onClick={onClose} className="mt-6 text-[10px] text-zinc-500 uppercase font-bold tracking-widest">
+                        Ainda não tenho interesse
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }

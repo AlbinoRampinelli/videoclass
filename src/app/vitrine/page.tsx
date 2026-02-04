@@ -1,16 +1,31 @@
 import { auth } from "@/auth";
 import VitrineCursos from "../components/VitrineCursos";
 import { db } from "../../../prisma/db";
+export const dynamic = "force-dynamic";
 
 export default async function VitrinePage() {
-  const session = await auth(); // Pega a sessão no servidor
+  const session = await auth();
   
-  // Busca o usuário no banco para passar o userDb
+  // 1. Buscamos o usuário
   const userDb = await db.user.findUnique({
     where: { email: session?.user?.email || "" },
     include: { enrollments: true }
   });
 
-  // IMPORTANTE: Passar a session e o userDb como props
-  return <VitrineCursos session={session} userDb={userDb} />;
+  // 2. BUSCAMOS OS CURSOS (O que estava faltando!)
+  const courses = await db.course.findMany({
+    orderBy: {
+      title: 'asc' // Opcional: organiza por nome
+    }
+  });
+
+  // 3. PASSAMOS TUDO PARA O CLIENT COMPONENT
+  return (
+    <VitrineCursos 
+      session={session} 
+      userDb={userDb} 
+      courses={courses} // Agora os cursos chegam lá!
+      travarCpf={true} 
+    />
+  );
 }
