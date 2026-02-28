@@ -16,16 +16,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   // No seu arquivo de configuração do NextAuth
   cookies: {
-  sessionToken: {
-    name: `next-auth.session-token`,
-    options: {
-      httpOnly: true,
-      sameSite: 'lax', // 👈 Essencial para o Chrome Mobile
-      path: '/',
-      secure: true
+    pkceCodeVerifier: {
+      name: 'next-auth.pkce.code_verifier',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
     },
   },
-},
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,

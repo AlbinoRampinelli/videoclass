@@ -9,7 +9,8 @@ interface CourseRegistrationModalProps {
   onClose: () => void;
   cursoId: string | null;
   cursoNome?: string;
-  openFeedback: (type: "success" | "conflict" | "error", msg: string) => void; // A CHAVE DO SUCESSO
+  onSuccess?: (id: any) => void;
+  openFeedback: (type: "success" | "conflict" | "error", msg: string) => void;
   userDefaultData?: {
     nome: string;
     email: string;

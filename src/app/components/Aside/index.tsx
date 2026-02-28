@@ -49,7 +49,7 @@ export default function Aside() {
 
   // 6. O Único Return do componente
   return (
-    <aside className="w-20 md:w-72 bg-[#09090b] border-r border-zinc-900 flex flex-col h-screen sticky top-0 pt-20 md:pr-6">
+    <aside className="w-20 md:w-72 bg-[#09090b] border-r border-zinc-900 flex flex-col h-screen sticky top-0 pt-20 md:pr-6" style={{minWidth: '5rem'}}>
       {/* 1. TOPO: Logo Videoclass Grande */}
       <div className="flex justify-center md:pl-8 pb-12">
         <Link href="/" className="group">
@@ -115,14 +115,13 @@ export default function Aside() {
                 )}
               </div>
 
-              {/* Esconde o nome no mobile para não quebrar o layout fininho */}
-              <div className="hidden md:flex flex-col truncate">
-                <span className="text-white font-bold text-xs uppercase italic truncate">
-                  {session.user?.name}
+                <div className="flex flex-col truncate">
+                <span className="text-white font-bold text-[10px] md:text-xs uppercase italic truncate">
+                  {session.user?.name?.split(' ')[0]}
                 </span>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#81FE88] animate-pulse" />
-                  <span className="text-[#81FE88] text-[9px] font-black uppercase tracking-widest">
+                  <span className="text-[#81FE88] text-[8px] md:text-[9px] font-black uppercase tracking-widest">
                     Online
                   </span>
                 </div>
@@ -145,10 +144,12 @@ export default function Aside() {
             </button>
           </div>
         ) : (
-          <button onClick={handleLogin} className="...">
+          <button
+            onClick={handleLogin}
+            className="flex flex-col md:flex-row items-center gap-1 md:gap-3 p-3 rounded-xl text-zinc-400 hover:text-[#81FE88] hover:bg-[#81FE88]/5 transition-all w-full justify-center md:justify-start"
+          >
             <LogIn size={20} />
-            {/* O span abaixo está escondendo o texto no celular por causa do 'hidden' */}
-            <span className="font-black text-xs uppercase italic hidden md:inline">
+            <span className="font-black text-[10px] md:text-xs uppercase italic">
               Entrar
             </span>
           </button>

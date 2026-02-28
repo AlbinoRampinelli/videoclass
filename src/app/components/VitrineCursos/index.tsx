@@ -39,40 +39,40 @@ export default function VitrineCursos({ userDb, session, courses = [], travarCpf
   const [activeKey, setActiveKey] = useState("1");
   const details = COURSE_DETAILS[activeKey];
   const [cursoSelecionadoParaRegistro, setCursoSelecionadoParaRegistro] = useState<any>(null);
-  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const router = useRouter();
 
   // 1. Definição da constante do Modal (Colocada aqui para o useEffect ler)
   const mostrarModalCpf = travarCpf && (!userDb?.cpf || !userDb?.userType);
     
   useEffect(() => {
-    // Trava o refresh se o usuário estiver digitando no Modal
     if (mostrarModalCpf) return;
+    if (!session?.user) return;
 
-    if (session?.user && (!userDb?.enrollments || userDb.enrollments.length === 0)) {
-      const timer = setTimeout(() => {
-        window.location.reload();
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [session?.user?.id, userDb?.enrollments?.length, mostrarModalCpf]);
+    const jaAtualizou = sessionStorage.getItem("vitrine_refreshed");
+    if (jaAtualizou) return;
+
+    sessionStorage.setItem("vitrine_refreshed", "1");
+    router.refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
 
   useEffect(() => {
-    const success = searchParams?.get("success");
-    const idDoCurso = searchParams?.get("id");
+    const searchParams = new URLSearchParams(window.location.search);
+    const success = searchParams.get("success");
+    const idDoCurso = searchParams.get("id");
 
     if (success === "true" && idDoCurso) {
       setComprasLocais(prev => {
         if (!prev.includes(idDoCurso)) {
             const novaLista = [...prev, idDoCurso];
-            localStorage.setItem("meus_cursos", JSON.stringify(novaLista)); // Salva na hora
+            localStorage.setItem("meus_cursos", JSON.stringify(novaLista));
             return novaLista;
         }
         return prev;
       });
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [searchParams]);
+  }, []);
 
   useEffect(() => {
     const carregarComprasDoCheckout = () => {
@@ -141,7 +141,7 @@ export default function VitrineCursos({ userDb, session, courses = [], travarCpf
         <p className="text-[#81FE88] font-bold text-[10px] uppercase tracking-[0.2em] mb-1">
           Ambiente de Aprendizado
         </p>
-        <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter leading-[0.9] pl-12 lg:pl-0">
+        <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter leading-[0.9]">
           OLÁ, {firstName}!
         </h1>
       </header>

@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  devIndicators: {
+    position: 'bottom-right',
+  },
   typescript: {
     // !! PERIGOSO, mas necessário agora para ignorar os erros e subir o site
     ignoreBuildErrors: true,
