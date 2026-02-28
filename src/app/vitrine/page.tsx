@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export default async function VitrinePage() {
   const session = await auth();
-  
+
   // 1. Buscamos o usuário
   const userDb = await db.user.findUnique({
     where: { email: session?.user?.email || "" },
@@ -18,14 +18,16 @@ export default async function VitrinePage() {
       title: 'asc' // Opcional: organiza por nome
     }
   });
-
+  // Verificamos se ele está logado MAS não tem CPF cadastrado
+  const usuarioPrecisaCadastrarCpf = session?.user && !userDb?.cpf;
   // 3. PASSAMOS TUDO PARA O CLIENT COMPONENT
   return (
-    <VitrineCursos 
-      session={session} 
-      userDb={userDb} 
+    <VitrineCursos
+      key={session?.user?.id || "guest"}
+      session={session}
+      userDb={userDb}
       courses={courses} // Agora os cursos chegam lá!
-      travarCpf={true} 
+      travarCpf={true}
     />
   );
 }

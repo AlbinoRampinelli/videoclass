@@ -3,19 +3,42 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import { db } from "../prisma/db"
 import Google from "next-auth/providers/google"
 import Credentials from "next-auth/providers/credentials"
+export const dynamic = "force-dynamic";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true, // Adicione isso para ele aceitar o localhost no build
+  secret: process.env.AUTH_SECRET,
   adapter: PrismaAdapter(db),
   session: { strategy: "jwt" },
   pages: {
     signIn: "/signin",
     error: "/auth/error",
   },
+  // No seu arquivo de configuração do NextAuth
+  cookies: {
+  sessionToken: {
+    name: `next-auth.session-token`,
+    options: {
+      httpOnly: true,
+      sameSite: 'lax', // 👈 Essencial para o Chrome Mobile
+      path: '/',
+      secure: true
+    },
+  },
+},
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       allowDangerousEmailAccountLinking: true,
+      authorization: {
+        params: {
+          scope: "openid email profile",
+          prompt: "select_account", // 👈 MUDADO: Menos agressivo que "consent"
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
     }), Credentials({
       id: "credentials",
       name: "CPF",

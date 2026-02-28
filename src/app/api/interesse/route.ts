@@ -1,45 +1,44 @@
-import { auth } from "@/auth";
+import { auth } from "@/auth"; // No v5, importamos apenas o 'auth'
 import { db } from "../../../../prisma/db";
-import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
+    // 1. Pega a sessão do jeito v5 (simples e direto)
     const session = await auth();
-    
+
+    // 2. Verifica se o usuário está logado
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+      return new Response("Não autorizado", { status: 401 });
     }
 
+    // 3. Pega os dados enviados pelo modal (JSON)
     const body = await req.json();
-    const { cursoId, userType, schoolName, cpf } = body;
+    const { cursoId, cpf } = body;
 
-    // 1. Atualiza o Usuário (Isso garante que o CPF salve no perfil)
-    await db.user.update({
-      where: { id: session.user.id },
-      data: { 
-        userType: userType, 
-        schoolName: schoolName,
-        cpf: cpf // <-- Certifique-se que o campo 'cpf' existe no model User
-      }
-    });
-
-    // 2. SALVA NA TABELA CERTA: 'Interest' (conforme sua foto)
-    // Se o código antes usava 'enrollment', ele estava mandando para a aba errada
-    const novoInteresse = await db.interest.create({
-      data: {
+    // 4. Grava no banco usando UPSERT (evita erro de duplicidade)
+    const novoInteresse = await db.interest.upsert({
+      where: {
+        // Usa o índice composto userId + courseId
+        userId_courseId: {
+          userId: session.user.id,
+          courseId: String(cursoId),
+        },
+      },
+      update: {
+        // Se já existir, apenas atualiza a data e garante que o CPF esteja lá
+        createdAt: new Date(),
+        cpf: cpf
+      },
+      create: {
         userId: session.user.id,
-        courseId: cursoId,
-        cpf: cpf, // A sua foto mostra que a tabela Interest tem uma coluna CPF!
-      }
+        courseId: String(cursoId),
+        cpf: cpf, // Aqui mata o erro "Argument cpf is missing"
+      },
     });
 
-    return NextResponse.json({ success: true, data: novoInteresse });
-
-  } catch (error: any) {
-    console.error("ERRO_PRISMA:", error);
-    return NextResponse.json(
-      { error: "Erro ao salvar", details: error.message }, 
-      { status: 500 }
-    );
+    return Response.json(novoInteresse);
+  } catch (error) {
+    console.error("ERRO_INTERESSE_API:", error);
+    return new Response("Erro ao registrar interesse", { status: 500 });
   }
 }

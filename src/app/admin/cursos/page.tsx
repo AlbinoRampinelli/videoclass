@@ -1,3 +1,5 @@
+
+export const dynamic = 'force-dynamic';
 import { db } from "../../../../prisma/db";
 import Link from "next/link";
 import { Plus, Edit } from "lucide-react";

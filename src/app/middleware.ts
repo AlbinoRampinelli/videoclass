@@ -1,21 +1,17 @@
-// src/middleware.ts
-import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { auth } from "@/auth" // ou de onde vem o seu 'auth'
 
 export default auth((req) => {
-  const isLogged = !!req.auth; // Verifica se existe sessão
-  const isLandingPage = req.nextUrl.pathname === "/";
+  const isLoggedIn = !!req.auth; // 1. Aqui ela se chama isLoggedIn
+  const isPrivateRoute = req.nextUrl.pathname.startsWith("/minha-classe");
 
-  // Se o cara está logado e tenta entrar na Landing Page ("/")
-  // Nós "jogamos" ele direto para a Vitrine
-  if (isLogged && isLandingPage) {
-    return NextResponse.redirect(new URL("/vitrine", req.url));
+  // 2. Aqui embaixo, tire o "is" extra:
+  if (isPrivateRoute && !isLoggedIn) { 
+     // Se não estiver logado tentando entrar na classe, o Next resolve o que fazer
+     return Response.redirect(new URL("/vitrine", req.nextUrl));
   }
+})
 
-  return NextResponse.next();
-});
-
-// Configuração para o Middleware não rodar em arquivos de imagem, css, etc.
 export const config = {
-  matcher: ["/"],
+  // Isso aqui diz para o Next não rodar o middleware em arquivos estáticos (evita lentidão)
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

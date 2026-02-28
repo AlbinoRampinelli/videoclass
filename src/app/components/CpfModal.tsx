@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
 export default function CpfModal({ 
@@ -14,15 +14,21 @@ export default function CpfModal({
 }) {
   const [cpf, setCpf] = useState("");
   const [phone, setPhone] = useState("");
-  
-  // Se for Google, inicializamos como ALUNO e Visitante automaticamente
   const [userType, setUserType] = useState(isGoogleLogin ? "ALUNO" : ""); 
   const [schoolName, setSchoolName] = useState(isGoogleLogin ? "Visitante Digital" : "");
-  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Máscaras de Input
+  // Referência para o primeiro input
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Forçar foco ao abrir (crucial para Mobile/Chrome)
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
   const maskCPF = (value: string) => {
     return value
       .replace(/\D/g, "")
@@ -42,8 +48,6 @@ export default function CpfModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    
-    // Validação de segurança
     if (!userType) return setError("Por favor, selecione seu tipo de perfil.");
     if (cpf.length < 14) return setError("CPF incompleto.");
     if (phone.length < 14) return setError("Telefone incompleto.");
@@ -54,13 +58,7 @@ export default function CpfModal({
     try {
       const res = await fetch("/api/user/update-profile", {
         method: "POST",
-        body: JSON.stringify({ 
-          userId, 
-          cpf, 
-          phone,
-          userType,
-          schoolName 
-        }), 
+        body: JSON.stringify({ userId, cpf, phone, userType, schoolName }), 
         headers: { "Content-Type": "application/json" },
       });
 
@@ -68,23 +66,25 @@ export default function CpfModal({
         window.location.reload(); 
       } else {
         const data = await res.json();
-        setError(data.error || "Ocorreu um erro ao salvar. Verifique se o CPF já está em uso.");
+        setError(data.error || "Ocorreu um erro ao salvar.");
       }
     } catch (error) {
-      setError("Falha na conexão com o servidor.");
+      setError("Falha na conexão.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
-      <div className={`bg-zinc-900 border ${error ? 'border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.1)]' : 'border-zinc-800'} p-8 md:p-10 rounded-[3rem] max-w-md w-full transition-all duration-300 max-h-[90vh] overflow-y-auto`}>
+    // z-index altíssimo e pointer-events-auto para garantir o toque
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 pointer-events-auto">
+      
+      <div className={`relative z-[10000] bg-zinc-900 border ${error ? 'border-red-500' : 'border-zinc-800'} p-8 md:p-10 rounded-[3rem] max-w-md w-full transition-all duration-300 max-h-[90vh] overflow-y-auto pointer-events-auto shadow-2xl`}>
         
         <div className="flex items-center gap-2 mb-2">
           <CheckCircle2 className="text-[#81FE88]" size={16} />
           <span className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em]">
-            {isGoogleLogin ? "Verificação de Segurança" : "Configuração de Perfil"}
+            Verificação de Segurança
           </span>
         </div>
 
@@ -92,9 +92,7 @@ export default function CpfModal({
           Olá{userName ? `, ${userName.split(' ')[0]}` : "!"}
         </h2>
         <p className="text-zinc-400 text-sm mb-6">
-          {isGoogleLogin 
-            ? "Para continuar sua compra, informe seu CPF e WhatsApp." 
-            : "Complete seu perfil para acessar a plataforma."}
+          Preencha para liberar seu acesso.
         </p>
 
         {error && (
@@ -104,35 +102,39 @@ export default function CpfModal({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="relative z-[10001] space-y-4">
           <div className="space-y-3">
-            {/* CPF - SEMPRE VISÍVEL */}
-            <label className="text-[10px] font-black text-zinc-600 uppercase ml-2 tracking-widest">Documento (CPF)</label>
+            
+            <label className="text-[10px] font-black text-zinc-600 uppercase ml-2 tracking-widest italic">Documento (CPF)</label>
             <input
+              ref={inputRef}
               required
+              autoFocus
+              type="text"
+              inputMode="numeric" // Melhora o teclado no Phone
               placeholder="000.000.000-00"
-              className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-[#81FE88] transition-colors"
+              className="relative z-[10002] w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-[#81FE88] focus:ring-1 focus:ring-[#81FE88] transition-all"
               value={cpf}
               onChange={(e) => setCpf(maskCPF(e.target.value))}
             />
 
-            {/* TELEFONE - SEMPRE VISÍVEL */}
-            <label className="text-[10px] font-black text-zinc-600 uppercase ml-2 tracking-widest">Whatsapp</label>
+            <label className="text-[10px] font-black text-zinc-600 uppercase ml-2 tracking-widest italic">Whatsapp</label>
             <input
               required
+              type="text"
+              inputMode="tel" // Teclado numérico no Phone
               placeholder="(00) 00000-0000"
-              className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-[#81FE88] transition-colors"
+              className="relative z-[10002] w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-[#81FE88] focus:ring-1 focus:ring-[#81FE88] transition-all"
               value={phone}
               onChange={(e) => setPhone(maskPhone(e.target.value))}
             />
 
-            {/* CAMPOS CONDICIONAIS: SÓ APARECEM SE NÃO FOR GOOGLE */}
             {!isGoogleLogin && (
               <>
-                <label className="text-[10px] font-black text-zinc-600 uppercase ml-2 tracking-widest">Eu sou</label>
+                <label className="text-[10px] font-black text-zinc-600 uppercase ml-2 tracking-widest italic">Eu sou</label>
                 <select 
                   required
-                  className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-[#81FE88] transition-colors appearance-none"
+                  className="relative z-[10002] w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-[#81FE88] appearance-none"
                   value={userType}
                   onChange={(e) => setUserType(e.target.value)}
                 >
@@ -141,14 +143,6 @@ export default function CpfModal({
                   <option value="PROFESSOR">Professor / Gestor</option>
                   <option value="PAI">Pai / Responsável</option>
                 </select>
-
-                <label className="text-[10px] font-black text-zinc-600 uppercase ml-2 tracking-widest">Nome da Escola (Opcional)</label>
-                <input
-                  placeholder="Ex: Escola Estadual..."
-                  className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-[#81FE88] transition-colors"
-                  value={schoolName}
-                  onChange={(e) => setSchoolName(e.target.value)}
-                />
               </>
             )}
           </div>
@@ -156,9 +150,9 @@ export default function CpfModal({
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-4 bg-[#81FE88] hover:bg-[#6ee474] text-black font-black py-5 rounded-2xl uppercase italic transition-all shadow-lg disabled:opacity-50"
+            className="relative z-[10002] w-full mt-4 bg-[#81FE88] hover:bg-[#6ee474] text-black font-black py-5 rounded-2xl uppercase italic transition-all shadow-lg active:scale-95 disabled:opacity-50"
           >
-            {loading ? "Salvando..." : "Finalizar e Acessar Vitrine"}
+            {loading ? "Gravando..." : "Finalizar e Acessar"}
           </button>
         </form>
       </div>

@@ -3,6 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   MonitorPlay,
@@ -13,10 +14,27 @@ import {
 } from "lucide-react";
 
 export default function Aside() {
+  // 1. Definições de Hooks de bibliotecas
   const { data: session } = useSession();
   const pathname = usePathname();
   const router = useRouter();
 
+  // 2. Seus estados (Hooks próprios)
+  const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // 3. Seus efeitos (Hooks próprios)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (pathname) {
+      setIsOpen(false);
+    }
+  }, [pathname]);
+
+  // 4. Lógicas simples e funções
   const isAdmin = session?.user?.email === "arampinelli10@gmail.com";
   const isActive = (path: string) => pathname === path;
 
@@ -26,49 +44,54 @@ export default function Aside() {
     router.push(destination);
   };
 
-  return (
-    <aside className="w-72 min-w-[18rem] bg-[#09090b] border-r border-zinc-900 flex flex-col h-screen sticky top-0 pt-20 pr-6">
-       
-      {/* 1. TOPO: Logo Videoclass Grande */}
-     <div className="pl-8 pb-12"> {/* Aumentei o pb (padding bottom) para afastar do menu */}
-    <Link href="/" className="group">
-      <div className="font-black italic text-3xl text-white tracking-tighter uppercase transition-all group-hover:text-[#81FE88]">
-        VIDEOCLASS<span className="text-[#81FE88]">.</span>
-      </div>
-    </Link>
-  </div>
+  // 5. A trava de segurança: Essencial para evitar erros no servidor e iPhone
+  if (!mounted) return null;
 
-      {/* 2. MEIO: Menu Principal (Início, Online, Presenciais) */}
-      <nav className="flex flex-col gap-2 px-6 flex-1">
-        <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 px-3">
+  // 6. O Único Return do componente
+  return (
+    <aside className="w-20 md:w-72 bg-[#09090b] border-r border-zinc-900 flex flex-col h-screen sticky top-0 pt-20 md:pr-6">
+      {/* 1. TOPO: Logo Videoclass Grande */}
+      <div className="flex justify-center md:pl-8 pb-12">
+        <Link href="/" className="group">
+          {/* No celular: Apenas o V. No Laptop: Texto completo */}
+          <div className="font-black italic text-3xl text-white tracking-tighter uppercase transition-all group-hover:text-[#81FE88]">
+            <span className="md:hidden">V<span className="text-[#81FE88]">.</span></span>
+            <span className="hidden md:inline">VIDEOCLASS<span className="text-[#81FE88]">.</span></span>
+          </div>
+        </Link>
+      </div>
+
+      {/* 2. MEIO: Menu Principal */}
+      <nav className="flex flex-col gap-2 px-2 md:px-6 flex-1">
+        <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 px-3 hidden md:block">
           Menu Principal
         </p>
 
         {/* Link Início */}
         <Link
           href="/"
-          className={`flex items-center gap-3 p-3 rounded-xl transition-all group ${isActive("/") ? "bg-[#81FE88]/10 text-[#81FE88]" : "text-zinc-500 hover:text-white"}`}
+          className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl transition-all group ${isActive("/") ? "bg-[#81FE88]/10 text-[#81FE88]" : "text-zinc-500 hover:text-white"}`}
         >
           <LayoutDashboard size={20} className={isActive("/") ? "text-[#81FE88]" : ""} />
-          <span className="font-bold italic uppercase tracking-tighter text-sm">Início</span>
+          <span className="font-bold italic uppercase tracking-tighter text-sm hidden md:inline">Início</span>
         </Link>
 
         {/* Link Online */}
         <Link
           href="/cursos-online"
-          className={`flex items-center gap-3 p-3 rounded-xl transition-all group ${isActive("/cursos-online") ? "bg-[#81FE88]/10 text-[#81FE88]" : "text-zinc-500 hover:text-white"}`}
+          className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl transition-all group ${isActive("/cursos-online") ? "bg-[#81FE88]/10 text-[#81FE88]" : "text-zinc-500 hover:text-white"}`}
         >
           <MonitorPlay size={20} className={isActive("/cursos-online") ? "text-[#81FE88]" : ""} />
-          <span className="font-bold italic uppercase tracking-tighter text-sm">Online</span>
+          <span className="font-bold italic uppercase tracking-tighter text-sm hidden md:inline">Online</span>
         </Link>
 
-        {/* Link Presenciais - ADICIONADO AQUI */}
+        {/* Link Presenciais */}
         <Link
           href="/cursos-presenciais"
-          className={`flex items-center gap-3 p-3 rounded-xl transition-all group ${isActive("/cursos-presenciais") ? "bg-[#81FE88]/10 text-[#81FE88]" : "text-zinc-500 hover:text-white"}`}
+          className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl transition-all group ${isActive("/cursos-presenciais") ? "bg-[#81FE88]/10 text-[#81FE88]" : "text-zinc-500 hover:text-white"}`}
         >
           <MapPin size={20} className={isActive("/cursos-presenciais") ? "text-[#81FE88]" : ""} />
-          <span className="font-bold italic uppercase tracking-tighter text-sm">Presenciais</span>
+          <span className="font-bold italic uppercase tracking-tighter text-sm hidden md:inline">Presenciais</span>
         </Link>
       </nav>
 
@@ -76,17 +99,24 @@ export default function Aside() {
       <div className="p-6 mt-auto border-t border-zinc-900 bg-zinc-950/50">
         {session ? (
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3 p-2 bg-zinc-900/50 rounded-2xl border border-zinc-800">
-              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#81FE88]/20">
+            <div className="flex items-center justify-center md:justify-start gap-3 p-2 bg-zinc-900/50 rounded-2xl border border-zinc-800">
+              <div className="w-10 h-10 min-w-[2.5rem] rounded-full overflow-hidden border-2 border-[#81FE88]/20">
                 {session.user?.image ? (
-                  <img src={session.user.image} alt="Avatar" className="w-full h-full object-cover" />
+                  <img
+                    src={session.user.image?.replace('=s96-c', '=s400-c')} // Força uma resolução que o mobile aceita melhor
+                    referrerPolicy="no-referrer"
+                    alt="Avatar "
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[#81FE88] font-bold">
                     {session.user?.name?.charAt(0)}
                   </div>
                 )}
               </div>
-              <div className="flex flex-col truncate">
+
+              {/* Esconde o nome no mobile para não quebrar o layout fininho */}
+              <div className="hidden md:flex flex-col truncate">
                 <span className="text-white font-bold text-xs uppercase italic truncate">
                   {session.user?.name}
                 </span>
@@ -106,7 +136,7 @@ export default function Aside() {
               </Link>
             )}
 
-            <button 
+            <button
               onClick={() => signOut({ callbackUrl: '/' })}
               className="flex items-center gap-3 p-3 rounded-xl text-zinc-500 hover:text-red-500 hover:bg-red-500/5 transition-all"
             >
@@ -115,12 +145,12 @@ export default function Aside() {
             </button>
           </div>
         ) : (
-          <button 
-            onClick={handleLogin}
-            className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-[#81FE88] text-black hover:bg-[#81FE88]/90 transition-all shadow-lg shadow-[#81FE88]/10"
-          >
+          <button onClick={handleLogin} className="...">
             <LogIn size={20} />
-            <span className="font-black text-xs uppercase italic">Entrar</span>
+            {/* O span abaixo está escondendo o texto no celular por causa do 'hidden' */}
+            <span className="font-black text-xs uppercase italic hidden md:inline">
+              Entrar
+            </span>
           </button>
         )}
       </div>

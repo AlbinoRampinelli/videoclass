@@ -14,7 +14,7 @@ export const Github = (props) => {
         }
         console.log('tentar fazer login via github');
         signIn('github', {
-            callbackUrl: '/'
+            callbackUrl: '/vitrine',
         })
     }
 

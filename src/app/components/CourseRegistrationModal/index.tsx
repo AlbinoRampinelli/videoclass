@@ -22,7 +22,8 @@ export default function CourseRegistrationModal({
   cursoId,
   cursoNome,
   openFeedback,
-  userDefaultData
+  userDefaultData,
+  onSuccess,
 }: CourseRegistrationModalProps) { // Use o nome novo aqui
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -32,7 +33,7 @@ export default function CourseRegistrationModal({
     setMounted(true);
   }, []);
 
-  if (!isOpen || !mounted) return null;
+  if (!isOpen) return null;
 
   // ... (imports permanecem iguais)
 
@@ -60,7 +61,9 @@ export default function CourseRegistrationModal({
 
       if (response.ok) {
         onClose(); // Sai da frente primeiro!
-
+        if (onSuccess && cursoId) {
+          onSuccess(cursoId);
+        }
         if (typeof openFeedback === 'function') {
           setTimeout(() => {
             openFeedback("success", "Sua reserva foi concluída!");
@@ -81,7 +84,7 @@ export default function CourseRegistrationModal({
 
   // O Portal joga o modal para fora do Aside/Card, direto no Body
   return createPortal(
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/98 backdrop-blur-xl p-4 pointer-events-auto">
+    <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/98 backdrop-blur-xl p-4 pointer-events-auto">
       <div className="bg-zinc-900 border border-zinc-800 w-full max-w-lg rounded-[2.5rem] p-8 md:p-12 relative shadow-2xl overflow-y-auto max-h-[95vh]">
 
         <button type="button" onClick={onClose} className="absolute top-6 right-6 text-zinc-500 hover:text-[#81FE88] transition-colors">

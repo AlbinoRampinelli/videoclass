@@ -1,6 +1,6 @@
 "use server"
 
-import { prisma } from "@/lib/prisma";
+import { db } from "../../prisma/db";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 
@@ -30,11 +30,11 @@ export async function updateCourseAction(courseId: string, formData: FormData) {
         features,
       },
     });
-    
+
     revalidatePath("/admin/courses");
     revalidatePath("/vitrine");
     revalidatePath("/"); // Atualiza a Landing Page também
-    
+
     return { success: true };
   } catch (error) {
     return { error: "Erro ao atualizar curso." };
@@ -46,7 +46,7 @@ export async function updateCourseAction(courseId: string, formData: FormData) {
  */
 export async function handleLeadAction(data: { cpf: string; userType: string; courseId: string }) {
   const session = await auth();
-  
+
   if (!session?.user?.email) {
     return { error: "Você precisa estar logado." };
   }
@@ -55,16 +55,16 @@ export async function handleLeadAction(data: { cpf: string; userType: string; co
     const { cpf, userType, courseId } = data;
 
     // 1. Atualiza o CPF e Tipo no perfil do usuário
-    await prisma.user.update({
+    await db.user.update({
       where: { email: session.user.email },
-      data: { 
+      data: {
         cpf: cpf,
-        userType: userType 
+        userType: userType
       }
     });
 
     // 2. Cria o registro de lead (interesse no curso)
-    const lead = await prisma.lead.create({
+    const lead = await db.lead.create({
       data: {
         userId: session.user.id,
         courseId: courseId,
@@ -73,12 +73,96 @@ export async function handleLeadAction(data: { cpf: string; userType: string; co
 
     // Limpa o cache para mostrar os dados atualizados
     revalidatePath("/vitrine");
-    
+
     return { success: true, lead };
   } catch (error: any) {
     if (error.code === 'P2002') {
       return { error: "Este CPF já está cadastrado em outra conta." };
     }
     return { error: "Erro interno ao processar seus dados." };
+  }
+}
+
+/**
+ * Cria um novo Módulo para um Curso
+ */
+export async function createModuleAction(courseId: string, title: string, order: number) {
+  try {
+    const newModule = await db.module.create({
+      data: {
+        courseId,
+        title,
+        order,
+      },
+    });
+    revalidatePath("/admin/cursos");
+    return { success: true, module: newModule };
+  } catch (error) {
+    return { error: "Erro ao criar módulo." };
+  }
+}
+
+/**
+ * Adiciona um Vídeo ou um Desafio (Exercício) ao Módulo
+ */
+export async function addContentToModuleAction(moduleId: string, type: "VIDEO" | "CHALLENGE", data: any) {
+  try {
+    if (type === "VIDEO") {
+      await db.video.create({
+        data: {
+          title: data.title,
+          url: data.url, // Ex: /videos/instalacao_python.mp4
+          order: data.order,
+          moduleId: moduleId,
+        },
+      });
+    } else {
+      await db.challenge.create({
+        data: {
+          title: data.title,
+          description: data.description,
+          order: data.order,
+          slug: data.slug,
+          initialCode: data.initialCode || "",
+          testCode: data.testCode || "",
+          expected: data.expected || "",
+          courseSlug: data.courseSlug,
+          moduleId: moduleId,
+        },
+      });
+    }
+
+    revalidatePath("/admin/cursos");
+    revalidatePath("/minha-classe");
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: "Erro ao adicionar conteúdo ao módulo." };
+  }
+}
+export async function marcarVideoConcluidoAction(lessonId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Não autorizado" };
+
+  try {
+    await db.lessonProgress.upsert({
+      where: {
+        userId_lessonId: {
+          userId: session.user.id,
+          lessonId: lessonId,
+        },
+      },
+      update: { completed: true },
+      create: {
+        userId: session.user.id,
+        lessonId: lessonId,
+        completed: true,
+      },
+    });
+
+    revalidatePath("/minha-classe");
+    return { success: true };
+  } catch (error) {
+    return { error: "Erro ao salvar progresso" };
   }
 }

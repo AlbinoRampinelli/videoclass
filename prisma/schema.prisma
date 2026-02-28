@@ -9,22 +9,27 @@ datasource db {
 }
 
 model User {
-  id                String       @id @default(cuid())
+  id                String    @id @default(cuid())
   name              String?
   image             String?
-  email             String?      @unique
-  cpf               String?      @unique
+  email             String?   @unique
+  cpf               String?   @unique
   passwordHash      String?
   codigoVerificacao String?
   phone             String?
   schoolName        String?
   emailVerified     DateTime?
-  userType          UserType     @default(RESPONSAVEL)
-  createdAt         DateTime     @default(now()) // <--- ADICIONE ESTA LINHA
+  userType          UserType  @default(RESPONSAVEL)
+  createdAt         DateTime  @default(now())
   accounts          Account[]
-  enrollments       Enrollment[]
   sessions          Session[]
+
+  // NOVAS RELAÇÕES
+  enrollments    Enrollment[]
+  lessonProgress LessonProgress[]
+  grades         Grade[]
 }
+
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -50,10 +55,12 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
 enum CourseFormat {
   ONLINE
   PRESENCIAL
 }
+
 model Course {
   id          String       @id @default(cuid())
   slug        String       @unique
@@ -61,22 +68,89 @@ model Course {
   format      CourseFormat @default(ONLINE)
   description String?
   price       Float
-  duration    String?      // ADICIONADO: Ex: "40h"
-  features    String[]     // ADICIONADO: ["Vitalício", "Kit Incluso"]
+  duration    String?
+  features    String[]
   imageUrl    String?
+
+  // RELAÇÕES ATUALIZADAS
   enrollments Enrollment[]
+  modules     Module[]
 }
 
 model Enrollment {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
   courseId  String
-  status    String   @default("active")
-  createdAt DateTime @default(now())
-  course    Course   @relation(fields: [courseId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  status    String    @default("active")
+  createdAt DateTime  @default(now())
+  endDate   DateTime? // Para controlar o tempo de acesso
+  course    Course    @relation(fields: [courseId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
   @@unique([userId, courseId])
 }
+
+// --- NOVAS TABELAS PARA O CURSO DE PYTHON ---
+
+model Module {
+  id       String  @id @default(cuid())
+  courseId String
+  title    String
+  videoUrl String?
+  order    Int // Ordem do módulo (1, 2, 3...)
+  course   Course  @relation(fields: [courseId], references: [id])
+
+  // Relacionamentos para conteúdos variáveis
+  videos     Video[]
+  challenges Challenge[]
+
+  // Mantendo lessons caso você já use para outra coisa
+  lessons Lesson[]
+  grades  Grade[]
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  title       String   // Ex: "Olá Mundo Python"
+  type        String   // "VIDEO" ou "LAB"
+  url         String?  // Ex: "/videos/video1.mp4" (Para vídeos)
+  description String?  // Para o texto do Laboratório
+  content     String?  @db.Text // Para código inicial ou instruções
+  order       Int      // 1, 2, 3... (Fundamental para sua sequência)
+  
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id])
+  
+  // Relações de progresso
+  progress    LessonProgress[]
+}
+
+model LessonProgress {
+  id        String  @id @default(cuid())
+  userId    String
+  lessonId  String
+  completed Boolean @default(false)
+  user      User    @relation(fields: [userId], references: [id])
+  lesson    Lesson  @relation(fields: [lessonId], references: [id])
+
+  @@unique([userId, lessonId])
+}
+
+model Grade {
+  id            String  @id @default(cuid())
+  userId        String
+  moduleId      String
+  theoryScore   Float   @default(0) // Nota dos vídeos (até 5)
+  practiceScore Float   @default(0) // Nota dos exercícios (até 5)
+  totalScore    Float   @default(0) // Soma (Média 7 passa)
+  isApproved    Boolean @default(false)
+  user          User    @relation(fields: [userId], references: [id])
+  module        Module  @relation(fields: [moduleId], references: [id])
+
+  @@unique([userId, moduleId])
+}
+
+// --- TABELAS DE LEADS E INTERESSES ---
 
 enum UserType {
   ALUNO
@@ -84,6 +158,7 @@ enum UserType {
   PROFESSOR
   OUTRO
 }
+
 model Interest {
   id        String   @id @default(cuid())
   userId    String
@@ -91,7 +166,7 @@ model Interest {
   cpf       String
   createdAt DateTime @default(now())
 
-  @@unique([userId, courseId]) // Um interesse por curso por usuário
+  @@unique([userId, courseId])
 }
 
 model Lead {
@@ -99,10 +174,49 @@ model Lead {
   nome      String
   email     String   @unique
   cpf       String   @unique
-  userType String?
+  userType  String?
   whatsapp  String
   escola    String?
-  cursoId   String?  // Para saber em qual curso ele se interessou
+  cursoId   String?
   createdAt DateTime @default(now())
-  status    String   @default("PENDENTE") // PENDENTE, CONVERTIDO, DESISTENTE
+  status    String   @default("PENDENTE")
+}
+
+model Challenge {
+  id          String @id @default(uuid())
+  slug        String @unique
+  title       String
+  description String
+  initialCode String
+  testCode    String
+  expected    String
+  order       Int    @default(0)
+  courseSlug  String
+
+  // Novo campo para relacionar com o módulo
+  moduleId    String?
+  module      Module?      @relation(fields: [moduleId], references: [id])
+  submissions Submission[]
+}
+
+model Submission {
+  id          String   @id @default(uuid())
+  userId      String
+  challengeId String
+  grade       Float // nota 0 a 10
+  code        String   @db.Text
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  challenge Challenge @relation(fields: [challengeId], references: [id])
+}
+
+model Video {
+  id    String @id @default(uuid())
+  title String
+  url   String // Link do YouTube/Vimeo
+  order Int    @default(0)
+
+  moduleId String
+  module   Module @relation(fields: [moduleId], references: [id])
 }

@@ -71,3 +71,19 @@
     padding: 10px 0 !important;     /* Garante que a div tenha altura */
     width: 100%;
 }
+
+/* Isso só será aplicado em telas menores que 1024px (Tablets e Celulares) */
+@media (max-width: 1024px) {
+    .main {
+        /* O que colocar aqui para empilhar? */
+    }
+
+    .bannerWrapper {
+        display: none; /* No mobile, geralmente escondemos o banner para focar no login */
+    }
+
+    .container {
+        width: 100%; /* Agora o form ocupa a largura toda */
+        padding: 20px;
+    }
+}
