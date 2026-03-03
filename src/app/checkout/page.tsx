@@ -29,7 +29,7 @@ function CheckoutContent() {
                 const response = await fetch(`/api/courses/${courseId}`);
                 const data = await response.json();
 
-                if (data) {
+                if (response.ok && data.title && data.price != null) {
                     setCursoAtual({
                         nome: data.title,
                         preco: data.price.toString()

@@ -41,9 +41,9 @@ export default function Aside() {
   if (estaNaClasse) {
     
     return (
-      <aside className="w-20 md:w-72 bg-[#09090b] border-r border-zinc-900 flex flex-col h-screen sticky top-0 pt-10 md:px-4 transition-all">
+      <aside className="hidden lg:flex lg:flex-col w-72 bg-[#09090b] border-r border-zinc-900 h-screen sticky top-0 px-4 transition-all">
 
-        <div className="flex justify-center md:justify-start md:pl-4 pb-8">
+        <div className="flex justify-start pl-4 pb-8 pt-10">
           <div className="font-black italic text-2xl text-white tracking-tighter uppercase">
             VIDEOCLASS<span className="text-[#81FE88]">.</span>
           </div>
@@ -158,68 +158,96 @@ export default function Aside() {
     );
   }
 
-  // --- 2. RENDERIZAÇÃO NO MODO VITRINE (COM PRESENCIAIS) ---
+  // --- 2. RENDERIZAÇÃO NO MODO VITRINE ---
+  const navItems = [
+    { href: "/vitrine", icon: <LayoutDashboard size={20} />, label: "Início", active: isActive("/vitrine") || isActive("/") },
+    { href: "/cursos-online", icon: <MonitorPlay size={20} />, label: "Online", active: isActive("/cursos-online") },
+    { href: "/cursos-presenciais", icon: <MapPin size={20} />, label: "Presenciais", active: isActive("/cursos-presenciais") },
+  ];
+
   return (
-    <aside className="w-20 md:w-72 bg-[#09090b] border-r border-zinc-900 flex flex-col h-screen sticky top-0 pt-20 md:pr-6" style={{ minWidth: '5rem' }}>
+    <>
+      {/* ── SIDEBAR DESKTOP ─────────────────────────────────────── */}
+      <aside className="hidden lg:flex lg:flex-col w-72 bg-[#09090b] border-r border-zinc-900 h-screen sticky top-0 pt-20 pr-6">
 
-      <div className="flex justify-center md:pl-8 pb-12">
-        <Link href="/" className="group font-black italic text-3xl text-white tracking-tighter uppercase">
-          <span className="md:hidden">V<span className="text-[#81FE88]">.</span></span>
-          <span className="hidden md:inline">VIDEOCLASS<span className="text-[#81FE88]">.</span></span>
-        </Link>
-      </div>
+        <div className="pl-8 pb-12">
+          <Link href="/" className="font-black italic text-3xl text-white tracking-tighter uppercase">
+            VIDEOCLASS<span className="text-[#81FE88]">.</span>
+          </Link>
+        </div>
 
-      <nav className="flex flex-col gap-2 px-2 md:px-6 flex-1">
-        <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 px-3 hidden md:block">Menu Principal</p>
+        <nav className="flex flex-col gap-2 px-6 flex-1">
+          <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 px-3">Menu Principal</p>
+          {navItems.map(item => (
+            <Link key={item.href} href={item.href} className={`flex items-center gap-3 p-3 rounded-xl transition-all ${item.active ? "bg-[#81FE88]/10 text-[#81FE88]" : "text-zinc-500 hover:text-white"}`}>
+              {item.icon}
+              <span className="font-bold italic uppercase text-sm">{item.label}</span>
+            </Link>
+          ))}
+        </nav>
 
-        <Link href="/vitrine" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl transition-all ${isActive("/vitrine") || isActive("/") ? "bg-[#81FE88]/10 text-[#81FE88]" : "text-zinc-500 hover:text-white"}`}>
-          <LayoutDashboard size={20} />
-          <span className="font-bold italic uppercase text-sm hidden md:inline">Início</span>
-        </Link>
-
-        <Link href="/cursos-online" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl transition-all ${isActive("/cursos-online") ? "bg-[#81FE88]/10 text-[#81FE88]" : "text-zinc-500 hover:text-white"}`}>
-          <MonitorPlay size={20} />
-          <span className="font-bold italic uppercase text-sm hidden md:inline">Online</span>
-        </Link>
-
-        <Link href="/cursos-presenciais" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl transition-all ${isActive("/cursos-presenciais") ? "bg-[#81FE88]/10 text-[#81FE88]" : "text-zinc-500 hover:text-white"}`}>
-          <MapPin size={20} />
-          <span className="font-bold italic uppercase text-sm hidden md:inline">Presenciais</span>
-        </Link>
-      </nav>
-
-      <div className="p-6 mt-auto border-t border-zinc-900 bg-zinc-950/50">
-        {session ? (
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-center md:justify-start gap-3 p-2 bg-zinc-900/50 rounded-2xl border border-zinc-800">
-              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#81FE88]/20">
-                <img src={session.user?.image || ""} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+        <div className="p-6 mt-auto border-t border-zinc-900 bg-zinc-950/50">
+          {session ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3 p-2 bg-zinc-900/50 rounded-2xl border border-zinc-800">
+                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#81FE88]/20">
+                  <img src={session.user?.image || ""} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex flex-col truncate">
+                  <span className="text-white font-bold text-[10px] uppercase italic truncate">{session.user?.name?.split(' ')[0]}</span>
+                  <span className="text-[#81FE88] text-[8px] font-black uppercase tracking-widest leading-none">Online</span>
+                </div>
               </div>
-              <div className="flex flex-col truncate hidden md:flex">
-                <span className="text-white font-bold text-[10px] uppercase italic truncate">{session.user?.name?.split(' ')[0]}</span>
-                <span className="text-[#81FE88] text-[8px] font-black uppercase tracking-widest leading-none">Online</span>
-              </div>
+              {isAdmin && (
+                <Link href="/admin" className="flex items-center gap-3 p-3 rounded-xl text-[#81FE88] border border-[#81FE88]/10 hover:bg-[#81FE88]/5 transition-all">
+                  <ShieldCheck size={18} />
+                  <span className="font-bold text-[10px] uppercase italic">Admin</span>
+                </Link>
+              )}
+              <button onClick={() => signOut({ callbackUrl: '/' })} className="flex items-center gap-3 p-3 rounded-xl text-zinc-500 hover:text-red-500 transition-all">
+                <LogOut size={18} />
+                <span className="font-bold text-[10px] uppercase italic">Sair</span>
+              </button>
             </div>
-
-            {isAdmin && (
-              <Link href="/admin" className="flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl text-[#81FE88] border border-[#81FE88]/10 hover:bg-[#81FE88]/5 transition-all">
-                <ShieldCheck size={18} />
-                <span className="font-bold text-[10px] uppercase italic hidden md:inline">Admin</span>
-              </Link>
-            )}
-
-            <button onClick={() => signOut({ callbackUrl: '/' })} className="flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl text-zinc-500 hover:text-red-500 transition-all">
-              <LogOut size={18} />
-              <span className="font-bold text-[10px] uppercase italic hidden md:inline">Sair</span>
+          ) : (
+            <button onClick={() => router.push('/signin')} className="flex items-center gap-3 p-3 rounded-xl text-[#81FE88] hover:bg-[#81FE88]/5 w-full">
+              <LogIn size={20} />
+              <span className="font-black text-[10px] uppercase italic">Entrar</span>
             </button>
-          </div>
+          )}
+        </div>
+      </aside>
+
+      {/* ── BOTTOM NAV MOBILE ───────────────────────────────────── */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#09090b]/95 backdrop-blur border-t border-zinc-900 flex items-stretch">
+        {navItems.map(item => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 transition-colors ${item.active ? "text-[#81FE88]" : "text-zinc-600 hover:text-white"}`}
+          >
+            {item.icon}
+            <span className="text-[9px] font-black uppercase">{item.label}</span>
+          </Link>
+        ))}
+        {session ? (
+          <button
+            onClick={() => signOut({ callbackUrl: '/' })}
+            className="flex-1 flex flex-col items-center justify-center py-3 gap-1 text-zinc-600 hover:text-red-500 transition-colors"
+          >
+            <LogOut size={20} />
+            <span className="text-[9px] font-black uppercase">Sair</span>
+          </button>
         ) : (
-          <button onClick={() => router.push('/signin')} className="flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl text-[#81FE88] hover:bg-[#81FE88]/5 rounded-xl w-full">
+          <button
+            onClick={() => router.push('/signin')}
+            className="flex-1 flex flex-col items-center justify-center py-3 gap-1 text-[#81FE88]"
+          >
             <LogIn size={20} />
-            <span className="font-black text-[10px] uppercase italic hidden md:inline">Entrar</span>
+            <span className="text-[9px] font-black uppercase">Entrar</span>
           </button>
         )}
-      </div>
-    </aside>
+      </nav>
+    </>
   );
 }

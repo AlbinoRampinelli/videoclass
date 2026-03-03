@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <main className="flex-1 w-full">
               {/* Adicionamos um padding-top no mobile (pt-20) 
        para o botão de "Sanduíche" não cobrir o seu "Olá, Albino!"  */}
-              <div className="pt-20 lg:pt-0">
+              <div>
                 {children}
               </div>
             </main>

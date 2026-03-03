@@ -55,35 +55,35 @@ export default async function LandingPage() {
   };
 
   return (
-    <div className="w-full py-16 px-6">
-      <div className="text-center mb-16">
-        <h1 className="text-5xl font-black mb-4 tracking-tighter text-white">
+    <div className="w-full py-8 md:py-16 px-4 md:px-6 pb-24 lg:pb-16">
+      <div className="text-center mb-8 md:mb-16">
+        <h1 className="text-3xl md:text-5xl font-black mb-4 tracking-tighter text-white">
           Domine a tecnologia do futuro.
         </h1>
-        <p className="text-zinc-400">Escolha seu caminho e comece a estudar agora mesmo.</p>
+        <p className="text-zinc-400 text-sm md:text-base">Escolha seu caminho e comece a estudar agora mesmo.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
         {courses.map((course) => {
           const features = getCourseFeatures(course.title);
 
           return (
-            <div key={course.id} className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 flex flex-col hover:border-[#81FE88]/30 transition-all group">
-              <div className="flex justify-between items-start mb-8">
+            <div key={course.id} className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-5 md:p-8 flex flex-col hover:border-[#81FE88]/30 transition-all group">
+              <div className="flex justify-between items-start mb-5 md:mb-8">
                 <div className="flex items-center gap-2 bg-zinc-800 px-3 py-1 rounded-full text-[#81FE88] text-xs font-bold">
                   <Clock size={14} /> {course.duration || "40h"}
                 </div>
                 <div className="flex flex-col items-end">
-                  <span className="text-2xl font-black text-white">R$ {course.price}</span>
+                  <span className="text-xl md:text-2xl font-black text-white">R$ {course.price}</span>
                   <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Preço Único</span>
                 </div>
               </div>
 
-              <h3 className="text-2xl font-bold mb-8 text-white group-hover:text-[#81FE88] transition-colors">
+              <h3 className="text-xl md:text-2xl font-bold mb-5 md:mb-8 text-white group-hover:text-[#81FE88] transition-colors">
                 {course.title}
               </h3>
 
-              <ul className="flex flex-col gap-4 mb-10 flex-grow">
+              <ul className="flex flex-col gap-3 md:gap-4 mb-6 md:mb-10 flex-grow">
                 {features.map((feature, index) => (
                   <li key={index} className="flex items-center gap-3 text-zinc-300 text-sm">
                     <CheckCircle2 size={18} className="text-[#81FE88] shrink-0" />

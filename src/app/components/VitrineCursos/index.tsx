@@ -99,7 +99,7 @@ export default function VitrineCursos({ userDb, session, courses = [], travarCpf
   const safeCourses = Array.isArray(courses) ? courses : [];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] px-4 py-4 md:px-10 md:py-6 max-w-7xl mx-auto flex flex-col text-white">
+    <div className="min-h-screen bg-[#0a0a0a] px-4 py-4 md:px-10 md:py-6 pb-24 lg:pb-6 max-w-7xl mx-auto flex flex-col text-white">
 
       {mostrarModalCpf && (
         <CpfModal userName={firstName} userId={userDb?.id} isGoogleLogin={true} />
@@ -210,7 +210,7 @@ export default function VitrineCursos({ userDb, session, courses = [], travarCpf
             return (
               <div
                 key={course.id}
-                className="transform scale-95 origin-top-left md:scale-100 cursor-pointer"
+                className="cursor-pointer"
                 onClick={() => {
                   setActiveKey(currentId);
                   setActiveVideoUrl(VIDEO_MAP[currentId] || VIDEO_MAP["default"]);

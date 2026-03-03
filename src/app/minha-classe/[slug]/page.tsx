@@ -28,41 +28,51 @@ export default async function Page({
     if (!slug) return redirect("/vitrine");
 
     try {
-        const modulo = await db.module.findFirst({
-            where: { course: { slug: slug } },
-            include: {
-                videos: { 
-                    orderBy: { order: 'asc' }
-                },
-                challenges: true // Buscamos a tabela onde estão os desafios (o "20")
-            }
-        });
+        // Busca módulos (vídeos) e desafios (por courseSlug) em paralelo
+        const [modulos, todosOsDesafios] = await Promise.all([
+            db.module.findMany({
+                where: { course: { slug: slug } },
+                orderBy: { order: 'asc' },
+                include: { videos: { orderBy: { order: 'asc' } } }
+            }),
+            db.challenge.findMany({
+                where: { courseSlug: slug },
+                orderBy: { order: 'asc' },
+                include: { module: true }
+            })
+        ]);
 
-        if (!modulo || !modulo.videos || modulo.videos.length === 0) {
-            return redirect("/vitrine");
-        }
+        if (!modulos || modulos.length === 0) return redirect("/vitrine");
 
-        // 1. Localiza o VÍDEO (para a navegação da tela)
-        const videoSelecionado = modulo.videos.find((v: any) => {
-            const termoBusca = aulaUrl?.toLowerCase() || "";
-            if (termoBusca.includes("configuracao") && v.title.includes("1.2")) return true;
-            if (termoBusca.includes("hello") && v.title.includes("1.1")) return true;
-            return v.title.toLowerCase().includes(termoBusca);
-        }) || modulo.videos[0];
+        const primeirModulo = modulos[0];
+        const todosOsVideos = modulos.flatMap((m: any) => m.videos);
 
-        // 2. Localiza o DESAFIO correspondente (pelo ID ou por título parecido)
-        const desafioCorrespondente = modulo.challenges.find((c: any) => {
-            const termoBusca = aulaUrl?.toLowerCase() || "";
-            return c.id === desafioId || c.title.toLowerCase().includes(termoBusca);
-        });
+        if (todosOsVideos.length === 0) return redirect("/vitrine");
 
-        // 3. MONTAGEM DA AULA ATIVA (Unindo Video + Challenge)
+        // 1. Localiza o VÍDEO
+        const videoSelecionado = (aulaUrl
+            ? todosOsVideos.find((v: any) => {
+                const t = aulaUrl.toLowerCase();
+                if (t.includes("configuracao") && v.title.includes("1.2")) return true;
+                if (t.includes("hello") && v.title.includes("1.1")) return true;
+                return v.title.toLowerCase().includes(t);
+            })
+            : null) || todosOsVideos[0];
+
+        // 2. Localiza o DESAFIO pelo índice ordinal (desafio=1 → index 0, desafio=2 → index 1)
+        const desafioCorrespondente = desafioId
+            ? (todosOsDesafios as any[])[Number(desafioId) - 1]
+            : null;
+
+        // 3. MONTAGEM DA AULA ATIVA
         const aulaAtiva = {
             ...videoSelecionado,
-            moduleTitle: modulo.title,
-            // Aqui está a mágica: se achou um desafio, usa o "expected" dele
+            moduleTitle: desafioCorrespondente?.module?.title || primeirModulo.title,
+            title: desafioCorrespondente?.title || videoSelecionado.title,
+            description: desafioCorrespondente?.description || (videoSelecionado as any).description || "",
             expectedOutput: desafioCorrespondente?.expected || (videoSelecionado as any).expectedOutput || "",
             initialCode: desafioCorrespondente?.initialCode || (videoSelecionado as any).initialCode || "",
+            url: desafioCorrespondente ? "" : videoSelecionado.url,
             challengeId: desafioCorrespondente?.id || null
         };
 
@@ -82,7 +92,7 @@ export default async function Page({
             <Suspense fallback={<div>Carregando...</div>}>
                 <MinhaClasseClient
                     aulaAtiva={aulaAtiva}
-                    todosOsVideos={modulo.videos as any}
+                    todosOsVideos={todosOsVideos as any}
                     codigoSalvo={codigoSalvo}
                 />
             </Suspense>
