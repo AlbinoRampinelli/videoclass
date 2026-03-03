@@ -1,17 +1,13 @@
-import { auth } from "@/auth"; // Certifique-se que o arquivo auth.ts está na sua pasta /src
+import { auth } from "@/auth";
 import { db } from "../../../../../prisma/db";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    // Pega a sessão usando o padrão do Auth.js v5 / Next.js 15
     const session = await auth();
-    
     const body = await req.json();
     const { cpf, phone } = body;
 
-    // Se não houver e-mail na sessão, o Prisma vai dar erro de 'undefined'.
-    // Esta verificação impede que o servidor trave (tela vermelha).
     if (!session?.user?.email) {
       return NextResponse.json(
         { error: "Você precisa estar logado para completar o perfil." }, 
@@ -19,11 +15,23 @@ export async function POST(req: Request) {
       );
     }
 
-    // Atualiza o usuário que acabou de logar via Google
+    // 1. BUSCA SE JÁ EXISTE ALGUÉM COM ESSE CPF
+    const existingCpfOwner = await db.user.findUnique({
+      where: { cpf: cpf },
+      select: { email: true }
+    });
+
+    // 2. SE O CPF JÁ EXISTE E NÃO É DO USUÁRIO LOGADO -> ERRO
+    if (existingCpfOwner && existingCpfOwner.email !== session.user.email) {
+      return NextResponse.json(
+        { error: "Este CPF já está cadastrado em outra conta." }, 
+        { status: 400 }
+      );
+    }
+
+    // 3. SE O CPF JÁ É DELE OU ESTÁ LIVRE -> ATUALIZA
     const updatedUser = await db.user.update({
-      where: { 
-        email: session.user.email 
-      },
+      where: { email: session.user.email },
       data: { 
         cpf: cpf,
         phone: phone,
@@ -35,16 +43,15 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("ERRO_PRISMA:", error);
 
-    // Se o CPF já existir no banco, o Prisma lança o erro P2002
     if (error.code === 'P2002') {
       return NextResponse.json(
-        { error: "Este CPF já está cadastrado em nossa base." }, 
+        { error: "Erro de duplicidade. Verifique se os dados estão corretos." }, 
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: "Ocorreu um erro interno ao salvar seus dados." }, 
+      { error: "Erro interno ao salvar." }, 
       { status: 500 }
     );
   }

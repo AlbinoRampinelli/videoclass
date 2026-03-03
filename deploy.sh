@@ -28,8 +28,8 @@ sshpass -p "$SERVER_PASS" ssh -tt -p $SERVER_PORT $SERVER_USER@$SERVER_IP << 'EO
   echo "⬆️ Subindo aplicação..."
   docker compose -f docker-compose.prod.yaml up -d app
 
-  echo "🧬 Rodando Prisma migrate deploy (container já rodando)..."
-  docker compose -f docker-compose.prod.yaml exec app npx prisma migrate deploy
-
   echo "✅ Deploy finalizado com sucesso!"
 EOF
+
+##echo "🧬 Rodando Prisma migrate deploy (container já rodando)..."
+##docker compose -f docker-compose.prod.yaml exec app npx prisma migrate deploy

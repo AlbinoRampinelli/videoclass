@@ -9,7 +9,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true, // Adicione isso para ele aceitar o localhost no build
   secret: process.env.AUTH_SECRET,
   adapter: PrismaAdapter(db),
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt",
+  maxAge: 30 * 24 * 60 * 60, 
+  updateAge: 24 * 60 * 60,
+   },
   pages: {
     signIn: "/signin",
     error: "/auth/error",
@@ -43,7 +46,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       authorization: {
         params: {
           scope: "openid email profile",
-          prompt: "select_account", // 👈 MUDADO: Menos agressivo que "consent"
+          //prompt: "select_account", // 👈 MUDADO: Menos agressivo que "consent"
           access_type: "offline",
           response_type: "code"
         }
@@ -134,6 +137,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.phone = token.phone as string;
         // @ts-ignore
         session.user.userType = token.userType as string;
+        // Garante que o ID do utilizador passe para a sessão para evitar re-consultas desnecessárias
+      }
+      if (token?.sub && session.user) {
+        session.user.id = token.sub;
       }
       return session;
     },

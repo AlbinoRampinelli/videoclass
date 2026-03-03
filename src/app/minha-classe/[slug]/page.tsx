@@ -1,55 +1,95 @@
-// app/minha-classe/[slug]/page.tsx (SEM "use client")
 import { db } from "../../../../prisma/db";
 import MinhaClasseClient from "./MinhaClasseClient";
 import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { Suspense } from 'react';
 
-// No Next.js 15, o params PRECISA ser uma Promise
-export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
-  
-  // 1. O PULO DO GATO: Desembrulhar o params com await
-  const resolvedParams = await params;
-  const slug = resolvedParams?.slug;
+export const revalidate = 0;
+export const dynamic = "force-dynamic";
 
-  if (!slug) return redirect("/vitrine");
+export default async function Page({
+    params,
+    searchParams
+}: {
+    params: Promise<{ slug: string }>,
+    searchParams: Promise<{ desafio?: string, aula?: string }>
+}) {
 
-  try {
-    // 2. Busca o módulo no banco
-    const modulo = await db.module.findFirst({
-      where: { 
-        course: { 
-          slug: slug 
-        } 
-      },
-      include: { 
-        videos: { 
-          orderBy: { order: 'asc' } 
-        } 
-      }
-    });
+    const [resolvedParams, resolvedSearchParams, session] = await Promise.all([
+        params,
+        searchParams,
+        auth()
+    ]);
 
-    // 3. Verificação de segurança para não quebrar o componente filho
-    if (!modulo || !modulo.videos || modulo.videos.length === 0) {
-      return (
-        <div className="min-h-screen bg-black text-white flex items-center justify-center p-6 text-center">
-          <div>
-            <h1 className="text-xl font-bold mb-2">Aula não encontrada</h1>
-            <p className="text-zinc-500 mb-4">O conteúdo para "{slug}" não foi localizado.</p>
-            <a href="/vitrine" className="text-[#81FE88] underline">Voltar para a vitrine</a>
-          </div>
-        </div>
-      );
+    const slug = resolvedParams?.slug;
+    const desafioId = resolvedSearchParams?.desafio;
+    const aulaUrl = resolvedSearchParams?.aula;
+
+    if (!slug) return redirect("/vitrine");
+
+    try {
+        const modulo = await db.module.findFirst({
+            where: { course: { slug: slug } },
+            include: {
+                videos: { 
+                    orderBy: { order: 'asc' }
+                },
+                challenges: true // Buscamos a tabela onde estão os desafios (o "20")
+            }
+        });
+
+        if (!modulo || !modulo.videos || modulo.videos.length === 0) {
+            return redirect("/vitrine");
+        }
+
+        // 1. Localiza o VÍDEO (para a navegação da tela)
+        const videoSelecionado = modulo.videos.find((v: any) => {
+            const termoBusca = aulaUrl?.toLowerCase() || "";
+            if (termoBusca.includes("configuracao") && v.title.includes("1.2")) return true;
+            if (termoBusca.includes("hello") && v.title.includes("1.1")) return true;
+            return v.title.toLowerCase().includes(termoBusca);
+        }) || modulo.videos[0];
+
+        // 2. Localiza o DESAFIO correspondente (pelo ID ou por título parecido)
+        const desafioCorrespondente = modulo.challenges.find((c: any) => {
+            const termoBusca = aulaUrl?.toLowerCase() || "";
+            return c.id === desafioId || c.title.toLowerCase().includes(termoBusca);
+        });
+
+        // 3. MONTAGEM DA AULA ATIVA (Unindo Video + Challenge)
+        const aulaAtiva = {
+            ...videoSelecionado,
+            moduleTitle: modulo.title,
+            // Aqui está a mágica: se achou um desafio, usa o "expected" dele
+            expectedOutput: desafioCorrespondente?.expected || (videoSelecionado as any).expectedOutput || "",
+            initialCode: desafioCorrespondente?.initialCode || (videoSelecionado as any).initialCode || "",
+            challengeId: desafioCorrespondente?.id || null
+        };
+
+        let codigoSalvo = null;
+        if (aulaAtiva.challengeId && session?.user?.id) {
+            const ultimaSubmissao = await db.submission.findFirst({
+                where: {
+                    challengeId: aulaAtiva.challengeId,
+                    userId: session.user.id,
+                },
+                orderBy: { createdAt: 'desc' }
+            });
+            codigoSalvo = ultimaSubmissao?.code || null;
+        }
+
+        return (
+            <Suspense fallback={<div>Carregando...</div>}>
+                <MinhaClasseClient
+                    aulaAtiva={aulaAtiva}
+                    todosOsVideos={modulo.videos as any}
+                    codigoSalvo={codigoSalvo}
+                />
+            </Suspense>
+        );
+
+    } catch (error) {
+        console.error("Erro no servidor:", error);
+        return redirect("/vitrine?error=server_error");
     }
-
-    // 4. Prepara os dados para o MinhaClasseClient
-    const aulaAtiva = {
-      ...modulo.videos[0],
-      moduleTitle: modulo.title
-    };
-
-    return <MinhaClasseClient aulaAtiva={aulaAtiva} />;
-
-  } catch (error) {
-    console.error("Erro no servidor:", error);
-    return redirect("/vitrine?error=server_error");
-  }
 }

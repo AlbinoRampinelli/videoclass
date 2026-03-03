@@ -166,3 +166,65 @@ export async function marcarVideoConcluidoAction(lessonId: string) {
     return { error: "Erro ao salvar progresso" };
   }
 }
+
+export async function criarConteudoAction(formData: FormData) {
+  const title = formData.get("title") as string;
+  const url = formData.get("url") as string;
+  const type = formData.get("type") as string; // 'VIDEO' ou 'DESAFIO'
+  const moduleSlug = formData.get("moduleSlug") as string; // Ex: 'python-do-zero'
+
+  // 1. Busca o módulo pelo slug para pegar o ID
+  const modulo = await db.module.findFirst({
+    where: { course: { slug: moduleSlug } }
+  });
+
+  if (!modulo) throw new Error("Módulo não encontrado");
+
+  // 2. Cria o vídeo/desafio no banco
+  await db.video.create({
+    data: {
+      title,
+      url,
+      moduleId: modulo.id,
+      order: 1, // Você pode automatizar a ordem depois
+    }
+  });
+
+  // Limpa o cache para a aula nova aparecer no Aside na hora
+  revalidatePath(`/minha-classe/${moduleSlug}`);
+}
+
+export async function salvarSubmissaoAction(challengeId: string, code: string, grade: number) {
+  // Por enquanto, como teste, vamos usar um ID fixo ou pegar da sessão se você tiver Auth
+  const userId = "id-do-aluno-teste"; 
+
+  return await db.submission.create({
+    data: {
+      userId,
+      challengeId,
+      code,
+      grade,
+      completed: grade >= 10, // Fica true se a nota for 10
+    },
+  });
+}
+
+export async function editarDesafioAction(formData: FormData) {
+  const id = formData.get("id") as string; // ID do registro que está editando
+  const title = formData.get("title") as string;
+  const description = formData.get("description") as string;
+  const initialCode = formData.get("initialCode") as string;
+  const expectedOutput = formData.get("expectedOutput") as string;
+
+  await db.video.update({
+    where: { id },
+    data: {
+      title,
+      description,
+      initialCode,
+      expectedOutput, // Garanta que este campo existe no seu schema.prisma
+    }
+  });
+
+  revalidatePath("/admin");
+}
