@@ -9,10 +9,15 @@ services:
     restart: always
     ports:
       - "3007:3000"
+    volumes:
+      - uploads_data:/app/public/uploads
     networks:
       - dds
 
 networks:
   dds:
     external: true
+
+volumes:
+  uploads_data:
 

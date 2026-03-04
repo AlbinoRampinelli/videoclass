@@ -7,12 +7,14 @@ interface InfoModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAction: () => void;
+  cursoNome?: string;
 }
 
-export default function InfoPythonModal({ 
-    isOpen, 
-    onClose, 
-    onAction 
+export default function InfoPythonModal({
+    isOpen,
+    onClose,
+    onAction,
+    cursoNome
   }: InfoModalProps) {
     
   console.log("SINAL DENTRO DO FILHO (Python):", typeof onAction);
@@ -22,7 +24,7 @@ export default function InfoPythonModal({
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
-      <div className="bg-zinc-900 border border-zinc-800 w-full max-w-4xl rounded-[2.5rem] overflow-hidden relative shadow-[0_0_50px_rgba(0,0,0,1)]">
+      <div className="bg-zinc-900 border border-zinc-800 w-full max-w-4xl rounded-[2.5rem] overflow-y-auto max-h-[90vh] relative shadow-[0_0_50px_rgba(0,0,0,1)]">
 
         {/* Botão Fechar */}
         <button
@@ -35,11 +37,14 @@ export default function InfoPythonModal({
         <div className="flex flex-col md:flex-row">
 
           {/* LADO ESQUERDO: IMPACTO */}
-          <div className="md:w-5/12 p-10 bg-gradient-to-br from-zinc-800 via-zinc-900 to-black flex flex-col justify-center border-b md:border-b-0 md:border-r border-zinc-800">
+          <div className="md:w-5/12 p-6 md:p-10 bg-gradient-to-br from-zinc-800 via-zinc-900 to-black flex flex-col justify-center border-b md:border-b-0 md:border-r border-zinc-800">
             <span className="bg-red-600 text-[10px] font-black uppercase tracking-[0.4em] mb-4">Metodologia Própria</span>
             <h2 className="text-5xl font-black text-white italic uppercase tracking-tighter leading-[0.85] mb-8">
-              Python na <br />
-              <span className="text-[#81FE88] drop-shadow-[0_0_15px_rgba(129,254,136,0.3)]">Prática.</span>
+              {cursoNome ? (
+                <span className="text-[#81FE88] drop-shadow-[0_0_15px_rgba(129,254,136,0.3)]">{cursoNome}</span>
+              ) : (
+                <>Python na <br /><span className="text-[#81FE88] drop-shadow-[0_0_15px_rgba(129,254,136,0.3)]">Prática.</span></>
+              )}
             </h2>
 
             <div className="bg-[#81FE88] p-7 rounded-[2rem] shadow-[0_10px_30px_rgba(129,254,136,0.2)] transform -rotate-1">

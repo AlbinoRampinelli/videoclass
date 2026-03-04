@@ -5,11 +5,14 @@ declare module "next-auth" {
     user: {
       id: string
       cpf?: string | null
+      phone?: string | null
+      userType?: string | null
     } & DefaultSession["user"]
   }
 
   interface User {
     cpf?: string | null
+    userType?: string | null
   }
 }
 
@@ -17,5 +20,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string
     cpf?: string | null
+    phone?: string | null
+    userType?: string | null
   }
 }

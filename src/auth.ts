@@ -103,8 +103,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.userType = (user as any).userType; // Adicionado conforme seu Schema
       }
 
-      // 2. RECUPERAÇÃO: Se entrar pelo Google e o CPF não estiver no token, busca no banco
-      if (token.email && !token.cpf) {
+      // 2. RECUPERAÇÃO: busca no banco se faltam dados no token (cobre JWTs antigos ou mudança de role)
+      if (token.email && (!token.cpf || !(token as any).userType)) {
         const dbUser = await db.user.findUnique({
           where: { email: token.email as string },
           select: { id: true, cpf: true, phone: true, userType: true }

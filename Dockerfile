@@ -40,6 +40,9 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/prisma ./prisma
 
+# Criar pasta de uploads com permissão para o usuário nextjs
+RUN mkdir -p ./public/uploads && chown -R nextjs:nodejs ./public/uploads
+
 USER nextjs
 
 EXPOSE 3000

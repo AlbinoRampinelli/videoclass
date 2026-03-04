@@ -1,114 +1,112 @@
 export const dynamic = 'force-dynamic';
-import { db } from "../../../prisma/db"; 
+import { db } from "../../../prisma/db";
 import Link from "next/link";
+import { ShieldCheck, Users, Plus, GraduationCap, BarChart2 } from "lucide-react";
 
-export default async function AdminChallengesPage() {
-  // Busca desafios trazendo o módulo para podermos acessar o ID de edição dele
-  const challenges = await db.challenge.findMany({
-    include: {
-      module: true,
+export default async function AdminHomePage() {
+  const courses = await db.course.findMany({
+    orderBy: { title: "asc" },
+    select: {
+      id: true, title: true, price: true, duration: true, isOpen: true,
+      _count: { select: { modules: true, enrollments: true } },
     },
-    orderBy: [
-      { courseSlug: 'asc' },
-      { order: 'asc' }
-    ]
   });
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="p-8 max-w-6xl mx-auto space-y-10">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-black italic uppercase text-white tracking-tighter">
-            Laboratório <span className="text-[#81FE88]">Python</span>
+          <h1 className="text-3xl font-black italic uppercase tracking-tighter text-white">
+            Painel <span className="text-[#81FE88]">Admin</span>
           </h1>
-          <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest">
+          <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest mt-1">
             Gerenciamento de Conteúdo
           </p>
         </div>
+
+        <div className="flex gap-3">
+          <Link
+            href="/admin/alunos"
+            className="flex items-center gap-2 bg-white/5 text-zinc-400 border border-zinc-800 px-5 py-2.5 rounded-2xl font-black italic uppercase text-[10px] hover:bg-[#81FE88] hover:text-black hover:border-[#81FE88] transition-all"
+          >
+            <GraduationCap size={13} /> Alunos
+          </Link>
+          <Link
+            href="/admin/leads"
+            className="flex items-center gap-2 bg-white/5 text-zinc-400 border border-zinc-800 px-5 py-2.5 rounded-2xl font-black italic uppercase text-[10px] hover:bg-[#81FE88] hover:text-black hover:border-[#81FE88] transition-all"
+          >
+            <Users size={13} /> Leads
+          </Link>
+          <Link
+            href="/admin/admins"
+            className="flex items-center gap-2 bg-white/5 text-zinc-400 border border-zinc-800 px-5 py-2.5 rounded-2xl font-black italic uppercase text-[10px] hover:bg-[#81FE88] hover:text-black hover:border-[#81FE88] transition-all"
+          >
+            <ShieldCheck size={13} /> Admins
+          </Link> 
+        </div>
       </div>
 
-      {/* BOTÕES DE AÇÃO RÁPIDA */}
-      <div className="flex gap-4 mb-6">
-        <Link
-          href="/admin/modules/new"
-          className="bg-white/5 text-zinc-400 border border-zinc-800 px-6 py-3 rounded-2xl font-black italic uppercase text-[10px] hover:bg-[#81FE88] hover:text-black hover:border-[#81FE88] transition-all"
-        >
-          + Criar Módulo
-        </Link>
+      {/* CURSOS */}
+      <section>
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Cursos</h2>
+            <p className="text-zinc-700 text-[9px] uppercase font-black mt-0.5">
+              {courses.length} curso{courses.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <Link
+            href="/admin/cursos/new"
+            className="flex items-center gap-2 bg-[#81FE88] text-black font-black italic uppercase text-[10px] px-5 py-2.5 rounded-2xl hover:scale-105 transition-all"
+          >
+            <Plus size={13} /> Novo Curso
+          </Link>
+        </div>
 
-        <Link
-          href="/admin/challenges/new"
-          className="bg-[#81FE88] text-black px-6 py-3 rounded-2xl font-black italic uppercase text-[10px] hover:scale-105 transition-all shadow-[0_0_20px_rgba(129,254,136,0.2)]"
-        >
-          + Novo Desafio Python
-        </Link>
-      </div>
-
-      {/* TABELA DE DESAFIOS */}
-      <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-zinc-800/50 text-zinc-400 text-[10px] uppercase font-black tracking-[0.2em]">
-              <th className="p-5 text-center w-16">#</th>
-              <th className="p-5">Desafio</th>
-              <th className="p-5">Módulo / Curso</th>
-              <th className="p-5 text-center">Slug</th>
-              <th className="p-5 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {challenges.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="p-20 text-center">
-                  <p className="text-zinc-500 italic uppercase font-black">Nenhum desafio encontrado.</p>
-                </td>
-              </tr>
-            ) : (
-              challenges.map((ch) => (
-                <tr key={ch.id} className="border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors group">
-                  <td className="p-5 text-center font-mono text-[#81FE88] text-xs">{ch.order}</td>
-                  <td className="p-5">
-                    <span className="font-bold italic uppercase text-white">{ch.title}</span>
-                  </td>
-                  <td className="p-5">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-zinc-300 text-[10px] font-bold uppercase">
-                          {ch.module?.title || "Sem Módulo"}
-                        </span>
-                        {/* BINGO: ACESSO PARA EDITAR O MÓDULO AQUI */}
-                        {ch.moduleId && (
-                          <Link 
-                            href={`/admin/modules/edit/${ch.moduleId}`}
-                            className="opacity-0 group-hover:opacity-100 text-[#81FE88] text-[9px] font-black uppercase underline decoration-[#81FE88]/30 transition-all"
-                          >
-                            Editar Módulo
-                          </Link>
-                        )}
-                      </div>
-                      <span className="text-zinc-600 text-[9px] uppercase font-black tracking-tighter italic">
-                        {ch.courseSlug}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="p-5 text-center text-zinc-500 font-mono text-[10px]">{ch.slug}</td>
-                  <td className="p-5 text-right flex justify-end gap-2">
-                    <Link
-                      href={`/admin/challenges/edit/${ch.id}`}
-                      className="text-[9px] font-black uppercase italic tracking-widest text-[#81FE88] border border-[#81FE88]/20 px-3 py-1.5 rounded-lg hover:bg-[#81FE88] hover:text-black transition-all"
-                    >
-                      Editar
-                    </Link>
-                    <button className="text-[9px] font-black uppercase italic tracking-widest text-red-500/50 border border-red-500/10 px-3 py-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-500">
-                      Excluir
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+        {courses.length === 0 ? (
+          <div className="border border-dashed border-zinc-700 rounded-2xl p-10 text-center">
+            <p className="text-zinc-600 text-[10px] uppercase font-black italic">
+              Nenhum curso cadastrado ainda.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {courses.map((course) => (
+              <Link
+                key={course.id}
+                href={`/admin/cursos/${course.id}`}
+                className="bg-zinc-900/40 border border-zinc-800 p-6 rounded-3xl hover:border-[#81FE88]/40 hover:bg-zinc-900/60 transition-all group"
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <span className="text-[#81FE88] font-black text-lg italic">
+                    R$ {course.price.toFixed(2).replace(".", ",")}
+                  </span>
+                  <span className="text-zinc-500 text-[9px] font-bold uppercase bg-zinc-800 px-2 py-1 rounded-md">
+                    {course.duration || "—"}
+                  </span>
+                </div>
+                <h3 className="text-white font-bold text-base uppercase italic mb-4 group-hover:text-[#81FE88] transition-colors">
+                  {course.title}
+                </h3>
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-3 text-[9px] font-black uppercase text-zinc-600">
+                    <span>{course._count.modules} módulo{course._count.modules !== 1 ? "s" : ""}</span>
+                    <span>·</span>
+                    <span>{course._count.enrollments} aluno{course._count.enrollments !== 1 ? "s" : ""}</span>
+                  </div>
+                  <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-md ${
+                    (course as any).isOpen
+                      ? "bg-[#81FE88]/10 text-[#81FE88]"
+                      : "bg-zinc-800 text-zinc-600"
+                  }`}>
+                    {(course as any).isOpen ? "Aberto" : "Fechado"}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

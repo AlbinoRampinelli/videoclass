@@ -22,7 +22,7 @@ export default async function AdminCoursesPage() {
         </div>
 
         <Link 
-          href="/admin/courses/new" 
+          href="/admin/cursos/new"
           className="bg-[#81FE88] text-black font-black uppercase italic px-6 py-3 rounded-2xl flex items-center gap-2 hover:scale-105 transition-transform"
         >
           <Plus size={20} /> Novo Curso
@@ -45,7 +45,7 @@ export default async function AdminCoursesPage() {
 
             <div className="flex gap-2">
               <Link 
-                href={`/admin/courses/${course.id}`}
+                href={`/admin/cursos/${course.id}`}
                 className="flex-1 text-center bg-zinc-800 text-white text-[10px] font-black uppercase py-3 rounded-xl hover:bg-zinc-700 transition-colors"
               >
                 Editar Detalhes

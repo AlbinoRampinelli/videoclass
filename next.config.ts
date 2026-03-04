@@ -3,6 +3,11 @@ const nextConfig = {
   devIndicators: {
     position: 'bottom-right',
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '100mb',
+    },
+  },
   typescript: {
     // !! PERIGOSO, mas necessário agora para ignorar os erros e subir o site
     ignoreBuildErrors: true,

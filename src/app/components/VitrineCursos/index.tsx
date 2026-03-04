@@ -42,7 +42,7 @@ export default function VitrineCursos({ userDb, session, courses = [], travarCpf
   const router = useRouter();
 
   // 1. Definição da constante do Modal (Colocada aqui para o useEffect ler)
-  const mostrarModalCpf = travarCpf && (!userDb?.cpf || !userDb?.userType);
+  const mostrarModalCpf = travarCpf && !!session?.user && (!userDb?.cpf || !userDb?.userType);
     
   useEffect(() => {
     if (mostrarModalCpf) return;
@@ -105,14 +105,6 @@ export default function VitrineCursos({ userDb, session, courses = [], travarCpf
         <CpfModal userName={firstName} userId={userDb?.id} isGoogleLogin={true} />
       )}
 
-      {cursoSelecionadoParaRegistro && (
-        <ModalInteresse
-          course={cursoSelecionadoParaRegistro}
-          onClose={() => setCursoSelecionadoParaRegistro(null)}
-          onAction={handleGoToRegistration}
-          userDb={userDb}
-        />
-      )}
 
       <CourseRegistrationModal
         isOpen={isLeadOpen}
@@ -198,14 +190,10 @@ export default function VitrineCursos({ userDb, session, courses = [], travarCpf
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {safeCourses.map((course: any) => {
             const currentId = String(course.id);
-            const ehCursoDeInformacao = currentId === "2" || currentId === "3";
-
-            // LOGICA DA VERDADE UNIFICADA:
-            // Checa no banco OU no estado local que capturou o pagamento agora
             const matriculadoNoBanco = userDb?.enrollments?.some((e: any) => String(e.courseId) === currentId);
-            const matriculadoLocalmente = comprasLocais.includes(currentId);
-            
-            const jaComprouFinal = ehCursoDeInformacao ? false : (matriculadoNoBanco || matriculadoLocalmente);
+            // Se logado, só confia no banco. localStorage só vale para visitantes sem conta.
+            const matriculadoLocalmente = !session?.user && comprasLocais.includes(currentId);
+            const jaComprouFinal = !!(matriculadoNoBanco || matriculadoLocalmente);
 
             return (
               <div
@@ -220,9 +208,12 @@ export default function VitrineCursos({ userDb, session, courses = [], travarCpf
                 <CourseCard
                   course={course}
                   jaComprou={jaComprouFinal}
-                  buttonType={ehCursoDeInformacao ? "saber-mais" : "matricula"}
+                  buttonType={jaComprouFinal && course.isOpen ? "matricula" : "saber-mais"}
                   onSaberMais={(deveAbrirModal) => {
-                    if (deveAbrirModal) setCursoSelecionadoParaRegistro(course);
+                    if (deveAbrirModal) {
+                      setCursoSelecionadoParaRegistro(course);
+                      setIsLeadOpen(true);
+                    }
                   }}
                   estado_atual={activeKey === currentId}
                 />

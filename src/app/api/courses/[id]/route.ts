@@ -1,23 +1,15 @@
 import { NextResponse } from "next/server";
-import db from "../../../../../prisma/db";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
-  request: Request,
-  props: { params: Promise<{ id: string }> }
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await props.params;
-
-    const course = await db.course.findUnique({
-      where: { id },
-    });
-
-    if (!course) {
-      return NextResponse.json({ error: "Curso não encontrado" }, { status: 404 });
-    }
-
-    return NextResponse.json(course);
-  } catch (error) {
-    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
-  }
+  const { id } = await params;
+  const course = await prisma.course.findUnique({
+    where: { id },
+    select: { id: true, title: true, price: true, slug: true, isOpen: true },
+  });
+  if (!course) return NextResponse.json({ message: "Curso não encontrado." }, { status: 404 });
+  return NextResponse.json(course);
 }

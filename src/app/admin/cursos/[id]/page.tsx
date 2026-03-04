@@ -1,94 +1,121 @@
 export const dynamic = 'force-dynamic';
 import { db } from "../../../../../prisma/db";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, Plus } from "lucide-react";
+import SortableModulesList from "../../_components/SortableModulesList";
+import ToggleOpenButton from "./ToggleOpenButton";
 
-export default async function EditCoursePage({ 
-  params 
-}: { 
-  params: Promise<{ id: string }> 
+export default async function CourseHubPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const course = await db.course.findUnique({ where: { id: id } });
 
-  if (!course) return <div className="text-white p-10 font-black italic">CURSO NÃO ENCONTRADO.</div>;
+  const course = await db.course.findUnique({
+    where: { id },
+    include: {
+      modules: {
+        orderBy: { order: "asc" },
+        include: {
+          _count: { select: { videos: true, challenges: true } },
+        },
+      },
+    },
+  });
 
-  // ESTA FUNÇÃO SALVA OS DADOS NO BANCO
+  if (!course) return <div className="p-20 text-white font-black italic">Curso não encontrado.</div>;
+
   async function updateCourse(formData: FormData) {
     "use server";
     const title = formData.get("title") as string;
     const price = parseFloat(formData.get("price") as string);
     const duration = formData.get("duration") as string;
-    const featuresRaw = formData.get("features") as string;
-    
-    // Converte o texto da área de texto em uma lista (Array)
-    const features = featuresRaw.split(",").map(f => f.trim()).filter(f => f !== "");
+    const features = (formData.get("features") as string)
+      .split(",").map((f) => f.trim()).filter(Boolean);
 
-    await db.course.update({
-      where: { id: id },
-      data: { title, price, duration, features }
-    });
-
-    revalidatePath("/admin");
+    await db.course.update({ where: { id }, data: { title, price, duration, features } });
+    revalidatePath(`/admin/cursos/${id}`);
     revalidatePath("/vitrine");
-    revalidatePath("/");
-    redirect("/admin");
   }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto min-h-screen">
-      <header className="mb-10">
-        <Link href="/admin" className="text-[#81FE88] text-xs font-bold uppercase tracking-widest hover:underline">
-          ← Voltar ao Painel
+    <div className="p-8 max-w-5xl mx-auto space-y-10">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2">
+        <Link href="/admin/cursos" className="flex items-center gap-1.5 text-zinc-500 hover:text-[#81FE88] transition-colors text-[10px] font-black uppercase">
+          <ArrowLeft size={12} /> Cursos
         </Link>
-        <h1 className="text-4xl font-black italic uppercase text-white mt-4 leading-none">
-          Editar {course.title}<span className="text-[#81FE88]">.</span>
+        <span className="text-zinc-700">/</span>
+        <span className="text-zinc-400 text-[10px] font-black uppercase truncate">{course.title}</span>
+      </div>
+
+      <div className="flex items-center justify-between -mt-4">
+        <h1 className="text-2xl font-black italic uppercase text-white">
+          {course.title}<span className="text-[#81FE88]">.</span>
         </h1>
-      </header>
+        <ToggleOpenButton courseId={id} isOpen={course.isOpen} />
+      </div>
 
-      <form action={updateCourse} className="space-y-6 bg-zinc-900/50 p-8 rounded-3xl border border-zinc-800 backdrop-blur-sm">
-        {/* NOME DO CURSO */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">Nome da Oficina</label>
-          <input name="title" defaultValue={course.title} className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 text-white focus:border-[#81FE88] outline-none transition-all" />
-        </div>
-
-        <div className="grid grid-cols-2 gap-6">
-          {/* PREÇO */}
+      {/* ── DETALHES ─────────────────────────────────────── */}
+      <section>
+        <h2 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-4">Detalhes do Curso</h2>
+        <form action={updateCourse} className="bg-zinc-900/40 border border-zinc-800 p-8 rounded-3xl space-y-5">
           <div className="flex flex-col gap-2">
-            <label className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">Preço (R$)</label>
-            <input name="price" type="number" step="0.01" defaultValue={course.price} className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 text-white focus:border-[#81FE88] outline-none" />
+            <label className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">Nome da Oficina</label>
+            <input name="title" defaultValue={course.title}
+              className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-white focus:border-[#81FE88] outline-none" />
           </div>
 
-          {/* DURAÇÃO */}
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">Duração (Ex: 40h)</label>
-            <input name="duration" defaultValue={course.duration || ""} className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 text-white focus:border-[#81FE88] outline-none" />
+          <div className="grid grid-cols-2 gap-5">
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">Preço (R$)</label>
+              <input name="price" type="number" step="0.01" defaultValue={course.price}
+                className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-white focus:border-[#81FE88] outline-none" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">Duração</label>
+              <input name="duration" defaultValue={course.duration || ""}
+                className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-white focus:border-[#81FE88] outline-none" />
+            </div>
           </div>
-        </div>
 
-        {/* TÓPICOS COMERCIAIS */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">
-            Tópicos (Separe por vírgula para criar os checks verdes)
-          </label>
-          <textarea 
-            name="features" 
-            defaultValue={course.features?.join(", ")} 
-            rows={5} 
-            placeholder="Ex: Certificado, Acesso Vitalício, Kit Incluso"
-            className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 text-white focus:border-[#81FE88] outline-none resize-none shadow-inner"
-          />
-        </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">
+              Tópicos (separados por vírgula)
+            </label>
+            <textarea name="features" rows={3} defaultValue={course.features?.join(", ")}
+              placeholder="Certificado, Acesso Vitalício, Kit Incluso"
+              className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-white focus:border-[#81FE88] outline-none resize-none" />
+          </div>
 
-        {/* BOTÕES */}
-        <div className="flex gap-4 pt-4">
-          <button type="submit" className="flex-1 py-4 bg-[#81FE88] text-black rounded-2xl font-black uppercase italic text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_20px_rgba(129,254,136,0.2)]">
-            Salvar Alterações
+          <button type="submit"
+            className="bg-[#81FE88] text-black font-black uppercase italic px-8 py-3 rounded-2xl hover:scale-[1.02] transition-all text-sm">
+            Salvar Detalhes
           </button>
+        </form>
+      </section>
+
+      {/* ── MÓDULOS ──────────────────────────────────────── */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Módulos</h2>
+            <p className="text-zinc-700 text-[9px] uppercase font-black mt-0.5">
+              {course.modules.length} módulo{course.modules.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <Link
+            href={`/admin/cursos/${id}/modulos/novo`}
+            className="flex items-center gap-2 bg-[#81FE88] text-black font-black italic uppercase text-[10px] px-5 py-2.5 rounded-2xl hover:scale-105 transition-all"
+          >
+            <Plus size={13} /> Novo Módulo
+          </Link>
         </div>
-      </form>
+
+        <SortableModulesList initialModules={course.modules as any} courseId={id} />
+      </section>
     </div>
   );
 }

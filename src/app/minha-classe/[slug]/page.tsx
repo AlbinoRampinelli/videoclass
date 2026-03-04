@@ -3,103 +3,154 @@ import MinhaClasseClient from "./MinhaClasseClient";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { Suspense } from 'react';
+import type { NavItem, SubmissionData } from "./MinhaClasseClient";
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
 export default async function Page({
-    params,
-    searchParams
+  params,
+  searchParams
 }: {
-    params: Promise<{ slug: string }>,
-    searchParams: Promise<{ desafio?: string, aula?: string }>
+  params: Promise<{ slug: string }>,
+  searchParams: Promise<{ videoId?: string, challengeId?: string }>
 }) {
+  const [resolvedParams, resolvedSearchParams, session] = await Promise.all([
+    params, searchParams, auth()
+  ]);
 
-    const [resolvedParams, resolvedSearchParams, session] = await Promise.all([
-        params,
-        searchParams,
-        auth()
-    ]);
+  const slug = resolvedParams?.slug;
+  if (!slug) return redirect("/vitrine");
 
-    const slug = resolvedParams?.slug;
-    const desafioId = resolvedSearchParams?.desafio;
-    const aulaUrl = resolvedSearchParams?.aula;
+  const activeVideoId = resolvedSearchParams?.videoId || null;
+  const activeChallengeId = resolvedSearchParams?.challengeId || null;
 
-    if (!slug) return redirect("/vitrine");
+  try {
+    const modulos = await db.module.findMany({
+      where: { course: { slug } },
+      orderBy: { order: 'asc' },
+      include: {
+        videos: {
+          orderBy: { order: 'asc' },
+          include: { challenges: { orderBy: { order: 'asc' } } }
+        },
+        // Desafios ligados ao módulo sem vídeo específico
+        challenges: {
+          where: { videoId: null },
+          orderBy: { order: 'asc' },
+        },
+      }
+    });
 
-    try {
-        // Busca módulos (vídeos) e desafios (por courseSlug) em paralelo
-        const [modulos, todosOsDesafios] = await Promise.all([
-            db.module.findMany({
-                where: { course: { slug: slug } },
-                orderBy: { order: 'asc' },
-                include: { videos: { orderBy: { order: 'asc' } } }
-            }),
-            db.challenge.findMany({
-                where: { courseSlug: slug },
-                orderBy: { order: 'asc' },
-                include: { module: true }
-            })
-        ]);
+    if (!modulos.length) return redirect("/vitrine");
 
-        if (!modulos || modulos.length === 0) return redirect("/vitrine");
-
-        const primeirModulo = modulos[0];
-        const todosOsVideos = modulos.flatMap((m: any) => m.videos);
-
-        if (todosOsVideos.length === 0) return redirect("/vitrine");
-
-        // 1. Localiza o VÍDEO
-        const videoSelecionado = (aulaUrl
-            ? todosOsVideos.find((v: any) => {
-                const t = aulaUrl.toLowerCase();
-                if (t.includes("configuracao") && v.title.includes("1.2")) return true;
-                if (t.includes("hello") && v.title.includes("1.1")) return true;
-                return v.title.toLowerCase().includes(t);
-            })
-            : null) || todosOsVideos[0];
-
-        // 2. Localiza o DESAFIO pelo índice ordinal (desafio=1 → index 0, desafio=2 → index 1)
-        const desafioCorrespondente = desafioId
-            ? (todosOsDesafios as any[])[Number(desafioId) - 1]
-            : null;
-
-        // 3. MONTAGEM DA AULA ATIVA
-        const aulaAtiva = {
-            ...videoSelecionado,
-            moduleTitle: desafioCorrespondente?.module?.title || primeirModulo.title,
-            title: desafioCorrespondente?.title || videoSelecionado.title,
-            description: desafioCorrespondente?.description || (videoSelecionado as any).description || "",
-            expectedOutput: desafioCorrespondente?.expected || (videoSelecionado as any).expectedOutput || "",
-            initialCode: desafioCorrespondente?.initialCode || (videoSelecionado as any).initialCode || "",
-            url: desafioCorrespondente ? "" : videoSelecionado.url,
-            challengeId: desafioCorrespondente?.id || null
-        };
-
-        let codigoSalvo = null;
-        if (aulaAtiva.challengeId && session?.user?.id) {
-            const ultimaSubmissao = await db.submission.findFirst({
-                where: {
-                    challengeId: aulaAtiva.challengeId,
-                    userId: session.user.id,
-                },
-                orderBy: { createdAt: 'desc' }
-            });
-            codigoSalvo = ultimaSubmissao?.code || null;
+    // Build flat navigation items:
+    // Para cada módulo → [video, challenge-do-video?, ...] depois [challenges-do-módulo]
+    const navItems: NavItem[] = [];
+    for (const mod of modulos) {
+      for (const video of mod.videos) {
+        const videoPdfUrl = video.pdfUrl ?? (mod as any).pdfUrl ?? null;
+        navItems.push({
+          type: 'video',
+          id: video.id,
+          moduleId: mod.id,
+          moduleTitle: mod.title,
+          title: video.title,
+          url: video.url ?? (mod as any).videoUrl ?? null,
+          description: video.description,
+          initialCode: video.initialCode,
+          expectedOutput: video.expectedOutput,
+          pdfUrl: videoPdfUrl,
+        });
+        // Desafios vinculados a este vídeo (pode haver mais de um)
+        for (const ch of video.challenges) {
+          navItems.push({
+            type: 'challenge',
+            id: ch.id,
+            moduleId: mod.id,
+            moduleTitle: mod.title,
+            title: ch.title,
+            description: ch.description,
+            initialCode: ch.initialCode,
+            expectedOutput: ch.expected,
+            challengeId: ch.id,
+            pdfUrl: videoPdfUrl,
+          });
         }
-
-        return (
-            <Suspense fallback={<div>Carregando...</div>}>
-                <MinhaClasseClient
-                    aulaAtiva={aulaAtiva}
-                    todosOsVideos={todosOsVideos as any}
-                    codigoSalvo={codigoSalvo}
-                />
-            </Suspense>
-        );
-
-    } catch (error) {
-        console.error("Erro no servidor:", error);
-        return redirect("/vitrine?error=server_error");
+      }
+      // Desafios vinculados apenas ao módulo (sem videoId)
+      for (const ch of (mod as any).challenges) {
+        navItems.push({
+          type: 'challenge',
+          id: ch.id,
+          moduleId: mod.id,
+          moduleTitle: mod.title,
+          title: ch.title,
+          description: ch.description,
+          initialCode: ch.initialCode,
+          expectedOutput: ch.expected,
+          challengeId: ch.id,
+          pdfUrl: (mod as any).pdfUrl ?? null,
+        });
+      }
     }
+
+    if (!navItems.length) return redirect("/vitrine");
+
+    // Fetch user's latest submission per challenge
+    const submissions: Record<string, SubmissionData> = {};
+    if (session?.user?.email) {
+      const user = await db.user.findUnique({ where: { email: session.user.email } });
+      if (user) {
+        const challengeIds = navItems
+          .filter(i => i.type === 'challenge' && i.challengeId)
+          .map(i => i.challengeId!);
+        if (challengeIds.length) {
+          const subs = await db.submission.findMany({
+            where: { userId: user.id, challengeId: { in: challengeIds } },
+            orderBy: { createdAt: 'desc' },
+          });
+          for (const sub of subs) {
+            if (!submissions[sub.challengeId]) {
+              submissions[sub.challengeId] = {
+                grade: sub.grade,
+                completed: sub.completed,
+                code: sub.code,
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // Determine active item index
+    let activeIndex = 0;
+    if (activeChallengeId) {
+      const idx = navItems.findIndex(i => i.challengeId === activeChallengeId);
+      if (idx >= 0) activeIndex = idx;
+    } else if (activeVideoId) {
+      const idx = navItems.findIndex(i => i.type === 'video' && i.id === activeVideoId);
+      if (idx >= 0) activeIndex = idx;
+    }
+
+    const activeItem = navItems[activeIndex];
+    const codigoSalvo = activeItem.type === 'challenge' && activeItem.challengeId
+      ? (submissions[activeItem.challengeId]?.code || null)
+      : null;
+
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-[#09090b]" />}>
+        <MinhaClasseClient
+          navItems={navItems}
+          activeIndex={activeIndex}
+          submissions={submissions}
+          codigoSalvo={codigoSalvo}
+          slug={slug}
+        />
+      </Suspense>
+    );
+  } catch (error) {
+    console.error("Erro no servidor:", error);
+    return redirect("/vitrine?error=server_error");
+  }
 }

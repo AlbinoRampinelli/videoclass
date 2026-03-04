@@ -8,6 +8,7 @@ function CheckoutContent() {
     const courseId = searchParams.get("id");
     const [cursoAtual, setCursoAtual] = useState<{ nome: string, preco: string } | null>(null);
     const [loading, setLoading] = useState(true);
+    const [matriculando, setMatriculando] = useState(false);
     const dadosDosCursos: any = {
         "1": { nome: "Curso de Python", preco: "297,00", pixData: "pagamento-python" },
         "2": { nome: "Oficina de Robótica", preco: "197,00", pixData: "pagamento-robotica" },
@@ -44,13 +45,17 @@ function CheckoutContent() {
         carregarCurso();
     }, [courseId]);
 
-    const finalizarPagamento = () => {
-        if (courseId) {
-            const cache = JSON.parse(localStorage.getItem("meus_cursos") || "[]");
-            if (!cache.includes(courseId)) {
-                cache.push(courseId);
-                localStorage.setItem("meus_cursos", JSON.stringify(cache));
-            }
+    const finalizarPagamento = async () => {
+        if (!courseId || matriculando) return;
+        setMatriculando(true);
+        try {
+            await fetch("/api/enrollments", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ courseId }),
+            });
+        } catch (e) {
+            console.error("Erro ao matricular:", e);
         }
         window.location.href = "/vitrine";
     };
@@ -89,9 +94,10 @@ function CheckoutContent() {
 
                 <button
                     onClick={finalizarPagamento}
-                    className="w-full bg-[#81FE88] text-black font-black py-4 rounded-full uppercase italic hover:bg-white transition-colors"
+                    disabled={matriculando}
+                    className="w-full bg-[#81FE88] text-black font-black py-4 rounded-full uppercase italic hover:bg-white transition-colors disabled:opacity-60"
                 >
-                    Confirmar Pagamento
+                    {matriculando ? "Matriculando..." : "Confirmar Pagamento"}
                 </button>
             </div>
         </div>

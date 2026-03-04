@@ -64,6 +64,7 @@ model Course {
   format      CourseFormat @default(ONLINE)
   duration    String?
   features    String[]
+  isOpen      Boolean      @default(false)
   enrollments Enrollment[]
   modules     Module[]
 }
@@ -87,6 +88,7 @@ model Module {
   title      String
   order      Int
   videoUrl   String?
+  pdfUrl     String?     @db.Text
   challenges Challenge[]
   grades     Grade[]
   lessons    Lesson[]
@@ -166,7 +168,9 @@ model Challenge {
   courseSlug  String
   order       Int          @default(0)
   moduleId    String?
+  videoId     String?
   module      Module?      @relation(fields: [moduleId], references: [id])
+  video       Video?       @relation(fields: [videoId], references: [id])
   submissions Submission[]
 }
 
@@ -176,6 +180,7 @@ model Submission {
   challengeId String
   grade       Float
   code        String
+  feedback    String?
   completed   Boolean   @default(false)
   createdAt   DateTime  @default(now())
   challenge   Challenge @relation(fields: [challengeId], references: [id])
@@ -186,16 +191,18 @@ model Submission {
 model Video {
   id             String       @id @default(cuid())
   title          String
-  url            String? // Opcional para desafios que não têm vídeo
+  url            String?
   description    String?
   order          Int          @default(0)
   initialCode    String?      @db.Text
-  expectedOutput String?      @db.Text // ADICIONE ESTA LINHA AQUI
+  expectedOutput String?      @db.Text
+  pdfUrl         String?      @db.Text
   moduleId       String
   module         Module       @relation(fields: [moduleId], references: [id])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @default(now()) @updatedAt
   submissions    Submission[]
+  challenges     Challenge[]
 }
 
 enum CourseFormat {
@@ -208,4 +215,5 @@ enum UserType {
   RESPONSAVEL
   PROFESSOR
   OUTRO
+  ADMIN
 }

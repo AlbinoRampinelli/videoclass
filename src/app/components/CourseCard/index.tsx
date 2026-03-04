@@ -12,6 +12,7 @@ interface CourseCardProps {
     duration?: string;
     category?: string;
     format?: string;
+    isOpen?: boolean;
   };
   jaComprou: boolean;
   buttonType: "saber-mais" | "matricula";
@@ -81,21 +82,37 @@ export function CourseCard({ course, jaComprou, buttonType, onSaberMais, estado_
 
       <div className="mt-auto relative z-10">
         {isSaberMais ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              console.log("Tentando acessar:", `/minha-classe/${course.slug}`);
-              // Use window.location para um teste "bruto" se o router.push falhar
-              window.location.href = `/minha-classe/${course.slug}`;
-            }}
-            className={`w-full py-4 md:py-5 rounded-2xl font-black text-center transition-all uppercase text-[10px] md:text-[12px] tracking-widest border cursor-pointer ${estado_atual
-              ? "bg-[#81FE88] border-[#81FE88] text-black shadow-lg"
-              : "bg-transparent border-zinc-700 text-zinc-500 hover:border-[#81FE88] hover:text-[#81FE88]"
-              }`}
-          >
-            {estado_atual ? "REGISTRAR INTERESSE" : "CONHECER MAIS"}
-          </button>
+          course.isOpen ? (
+            // Curso aberto + não matriculado → ir para checkout (QR code)
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.location.href = `/checkout?id=${course.id}`;
+              }}
+              className={`w-full py-4 md:py-5 rounded-2xl font-black text-center transition-all uppercase text-[10px] md:text-[12px] tracking-widest cursor-pointer ${estado_atual
+                ? "bg-[#81FE88] text-black shadow-lg"
+                : "bg-[#81FE88]/10 border border-[#81FE88]/40 text-[#81FE88] hover:bg-[#81FE88] hover:text-black"
+                }`}
+            >
+              MATRICULAR AGORA
+            </button>
+          ) : (
+            // Curso fechado → registrar interesse (lead)
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSaberMais(true);
+              }}
+              className={`w-full py-4 md:py-5 rounded-2xl font-black text-center transition-all uppercase text-[10px] md:text-[12px] tracking-widest border cursor-pointer ${estado_atual
+                ? "bg-transparent border-[#81FE88] text-[#81FE88] shadow-lg"
+                : "bg-transparent border-zinc-700 text-zinc-500 hover:border-[#81FE88] hover:text-[#81FE88]"
+                }`}
+            >
+              TENHO INTERESSE
+            </button>
+          )
         ) : (
           <button
             onClick={(e) => {
@@ -109,10 +126,9 @@ export function CourseCard({ course, jaComprou, buttonType, onSaberMais, estado_
                 window.location.href = `/checkout?id=${course.id}`;
               }
             }}
-            className={`w-full block py-4 md:py-5 rounded-2xl font-black text-center transition-all uppercase text-[11px] tracking-widest ${liberado ? "bg-white text-black" : "bg-[#81FE88] text-black shadow-lg"
-              }`}
+            className="w-full block py-4 md:py-5 rounded-2xl font-black text-center transition-all uppercase text-[11px] tracking-widest bg-[#81FE88] text-black shadow-lg"
           >
-            {liberado ? "ACESSAR AGORA" : "COMPRAR AGORA"}
+            ACESSAR AGORA
           </button>
         )}
       </div>
