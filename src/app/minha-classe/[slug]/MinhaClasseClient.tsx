@@ -30,6 +30,12 @@ export interface SubmissionData {
 
 type Aba = "instrucoes" | "codigo" | "console";
 
+function getGoogleDriveEmbedUrl(url: string): string | null {
+  const match = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (match) return `https://drive.google.com/file/d/${match[1]}/preview`;
+  return null;
+}
+
 export default function MinhaClasse({
   navItems,
   activeIndex,
@@ -367,14 +373,30 @@ export default function MinhaClasse({
               </h1>
               <div className="aspect-video bg-black rounded-2xl lg:rounded-[2.5rem] overflow-hidden border border-zinc-800 shadow-2xl">
                 {currentItem?.url ? (
-                  <video
-                    key={currentItem.url}
-                    controls
-                    className="w-full h-full object-contain"
-                    onTimeUpdate={handleTimeUpdate}
-                  >
-                    <source src={currentItem.url} type="video/mp4" />
-                  </video>
+                  (() => {
+                    const driveUrl = getGoogleDriveEmbedUrl(currentItem.url);
+                    if (driveUrl) {
+                      return (
+                        <iframe
+                          key={currentItem.url}
+                          src={driveUrl}
+                          className="w-full h-full"
+                          allow="autoplay; encrypted-media"
+                          allowFullScreen
+                        />
+                      );
+                    }
+                    return (
+                      <video
+                        key={currentItem.url}
+                        controls
+                        className="w-full h-full object-contain"
+                        onTimeUpdate={handleTimeUpdate}
+                      >
+                        <source src={currentItem.url} type="video/mp4" />
+                      </video>
+                    );
+                  })()
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-zinc-700 text-sm font-bold uppercase italic">
                     Nenhum vídeo cadastrado para esta aula
