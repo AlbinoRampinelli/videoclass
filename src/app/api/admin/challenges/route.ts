@@ -21,20 +21,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Título, slug e curso são obrigatórios." }, { status: 400 });
   }
 
-  const challenge = await prisma.challenge.create({
-    data: {
-      title,
-      slug,
-      description: description || "",
-      initialCode: initialCode || "",
-      expected: expected || "",
-      testCode: "",
-      courseSlug,
-      moduleId: moduleId || null,
-      videoId: videoId || null,
-      order: Number(order) || 0,
-    },
-  });
+  try {
+    const challenge = await prisma.challenge.create({
+      data: {
+        title,
+        slug,
+        description: description || "",
+        initialCode: initialCode || "",
+        expected: expected || "",
+        testCode: "",
+        courseSlug,
+        moduleId: moduleId || null,
+        videoId: videoId || null,
+        order: Number(order) || 0,
+      },
+    });
 
-  return NextResponse.json(challenge, { status: 201 });
+    return NextResponse.json(challenge, { status: 201 });
+  } catch (err: any) {
+    if (err?.code === "P2002") {
+      return NextResponse.json({ message: "Já existe um desafio com esse slug." }, { status: 400 });
+    }
+    return NextResponse.json({ message: "Erro ao criar desafio." }, { status: 500 });
+  }
 }
